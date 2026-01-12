@@ -1116,6 +1116,41 @@ kbd {
     border-color: var(--accent-blue);
 }
 
+/* Allow Paste Box */
+.allow-paste-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    background: var(--bg-primary);
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 2px dashed var(--accent-purple);
+}
+
+.allow-paste-box code {
+    font-family: 'Consolas', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent-purple);
+    flex: 1;
+}
+
+.copy-small-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all var(--transition-fast);
+}
+
+.copy-small-btn:hover {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
 /* Paste Container */
 .paste-container {
     margin-bottom: 24px;
