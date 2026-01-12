@@ -36,9 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeTabs();
     initializeSearch();
     initializeButtons();
-    initializeBookmarklet();
     initializeMobileMenu();
-    checkForBookmarkletData();
+    initializeConsoleSection();
     loadSnapshots();
 });
 
@@ -557,82 +556,162 @@ function exportData() {
     showToast('Veriler indirildi! 📥', 'success');
 }
 
-// ===== Bookmarklet =====
-function initializeBookmarklet() {
-    // Bookmarklet code that will be run on Twitter
-    const bookmarkletCode = `
-        (function() {
-            const type = window.location.href.includes('/followers') ? 'followers' : 
-                         window.location.href.includes('/following') ? 'following' : null;
-            
-            if (!type) {
-                alert('Lütfen Twitter takipçi veya takip sayfasında bu bookmarklet\\'i kullanın.');
-                return;
-            }
-            
-            alert('Veriler toplanıyor... Sayfa otomatik scroll yapacak. Lütfen bekleyin.');
-            
-            const users = new Set();
-            let lastCount = 0;
-            let stableCount = 0;
-            
-            const scroll = setInterval(() => {
-                document.querySelectorAll('[data-testid="UserCell"]').forEach(cell => {
-                    const link = cell.querySelector('a[href^="/"]');
-                    if (link) {
-                        const username = link.getAttribute('href').replace('/', '');
-                        if (username && !username.includes('/')) {
-                            users.add(username);
-                        }
-                    }
-                });
-                
-                if (users.size === lastCount) {
-                    stableCount++;
-                    if (stableCount >= 3) {
-                        clearInterval(scroll);
-                        const data = { type, users: Array.from(users), date: new Date().toISOString() };
-                        localStorage.setItem('xAnalyzerData_' + type, JSON.stringify(data));
-                        alert('✅ ' + users.size + ' ' + (type === 'followers' ? 'takipçi' : 'takip') + ' toplandı! Ana sayfaya dönün ve sayfayı yenileyin.');
-                    }
-                } else {
-                    stableCount = 0;
-                    lastCount = users.size;
-                }
-                
-                window.scrollBy(0, 1000);
-            }, 500);
-        })();
-    `;
+// ===== Console Section =====
+function initializeConsoleSection() {
+    const copyBtn = document.getElementById('copy-code-btn');
+    const codeBlock = document.getElementById('console-code');
+    const analyzeBtn = document.getElementById('analyze-paste-btn');
+    const methodTabs = document.querySelectorAll('.method-tab');
+    const codeTitle = document.getElementById('code-title');
 
-    elements.bookmarkletLink.href = 'javascript:' + encodeURIComponent(bookmarkletCode.replace(/\s+/g, ' ').trim());
+    // Followers code
+    const followersCode = `// X/Twitter Takipçi Toplama Scripti
+(async function() {
+    const users = new Set();
+    let lastCount = 0, stable = 0;
+    console.log('🔄 Takipçiler toplanıyor...');
+    
+    const scroll = setInterval(async () => {
+        document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a => {
+            const u = a.pathname.slice(1);
+            if (u && !u.includes('/')) users.add(u);
+        });
+        
+        console.log('📊 Bulunan:', users.size);
+        
+        if (users.size === lastCount) {
+            if (++stable >= 3) {
+                clearInterval(scroll);
+                console.log('✅ Tamamlandı! Toplam:', users.size);
+                prompt('Listeyi kopyalayın (Ctrl+C):', [...users].join('\\n'));
+            }
+        } else { stable = 0; lastCount = users.size; }
+        
+        window.scrollBy(0, 2000);
+    }, 800);
+})();`;
+
+    // Following code
+    const followingCode = `// X/Twitter Takip Ettiklerini Toplama Scripti
+(async function() {
+    const users = new Set();
+    let lastCount = 0, stable = 0;
+    console.log('🔄 Takip ettiklerin toplanıyor...');
+    
+    const scroll = setInterval(async () => {
+        document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a => {
+            const u = a.pathname.slice(1);
+            if (u && !u.includes('/')) users.add(u);
+        });
+        
+        console.log('📊 Bulunan:', users.size);
+        
+        if (users.size === lastCount) {
+            if (++stable >= 3) {
+                clearInterval(scroll);
+                console.log('✅ Tamamlandı! Toplam:', users.size);
+                prompt('Listeyi kopyalayın (Ctrl+C):', [...users].join('\\n'));
+            }
+        } else { stable = 0; lastCount = users.size; }
+        
+        window.scrollBy(0, 2000);
+    }, 800);
+})();`;
+
+    // Copy button
+    if (copyBtn && codeBlock) {
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ Kopyalandı!';
+                showToast('Kod panoya kopyalandı!', 'success');
+                setTimeout(() => copyBtn.textContent = originalText, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = codeBlock.textContent;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                copyBtn.textContent = '✅ Kopyalandı!';
+                setTimeout(() => copyBtn.textContent = '📋 Kopyala', 2000);
+            });
+        });
+    }
+
+    // Method tabs
+    methodTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            methodTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            const method = tab.dataset.method;
+            if (method === 'followers') {
+                codeBlock.textContent = followersCode;
+                codeTitle.textContent = '📥 Takipçileri Toplama Kodu';
+            } else {
+                codeBlock.textContent = followingCode;
+                codeTitle.textContent = '📤 Takip Ettiklerini Toplama Kodu';
+            }
+        });
+    });
+
+    // Analyze pasted data
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', analyzePastedData);
+    }
 }
 
-function checkForBookmarkletData() {
-    const followersData = localStorage.getItem('xAnalyzerData_followers');
-    const followingData = localStorage.getItem('xAnalyzerData_following');
+function analyzePastedData() {
+    const followersInput = document.getElementById('followers-input');
+    const followingInput = document.getElementById('following-input');
 
-    if (followersData && followingData) {
-        try {
-            const followers = JSON.parse(followersData);
-            const following = JSON.parse(followingData);
+    const followersText = followersInput?.value.trim() || '';
+    const followingText = followingInput?.value.trim() || '';
 
-            currentData.followers = followers.users.map(u => ({
-                accountId: u,
-                userLink: `https://twitter.com/${u}`
-            }));
-
-            currentData.following = following.users.map(u => ({
-                accountId: u,
-                userLink: `https://twitter.com/${u}`
-            }));
-
-            analyzeData();
-            showResults();
-            showToast('Bookmarklet verileri yüklendi! 🎉', 'success');
-
-        } catch (e) {
-            console.error('Bookmarklet verisi parse edilemedi:', e);
-        }
+    if (!followersText && !followingText) {
+        showToast('Lütfen en az bir listeye veri yapıştırın.', 'warning');
+        return;
     }
+
+    // Parse usernames (one per line, or comma separated, or JSON array)
+    const parseList = (text) => {
+        if (!text) return [];
+
+        // Try JSON first
+        try {
+            const parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) return parsed.filter(u => typeof u === 'string');
+        } catch (e) { }
+
+        // Try line-by-line or comma separated
+        return text
+            .split(/[\n,]/)
+            .map(u => u.trim().replace(/^@/, '').replace(/["'\[\]]/g, ''))
+            .filter(u => u && u.length > 0 && !u.includes(' '));
+    };
+
+    const followers = parseList(followersText);
+    const following = parseList(followingText);
+
+    if (followers.length === 0 && following.length === 0) {
+        showToast('Geçerli kullanıcı adı bulunamadı.', 'error');
+        return;
+    }
+
+    // Update current data
+    currentData.followers = followers.map(u => ({
+        accountId: u,
+        userLink: `https://twitter.com/${u}`
+    }));
+
+    currentData.following = following.map(u => ({
+        accountId: u,
+        userLink: `https://twitter.com/${u}`
+    }));
+
+    analyzeData();
+    showResults();
+    showToast(`Analiz tamamlandı! ${followers.length} takipçi, ${following.length} takip edilen`, 'success');
 }
