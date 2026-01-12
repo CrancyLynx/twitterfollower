@@ -241,31 +241,28 @@
 
         <!-- Console Script Section -->
         <section class="console-section" id="hizli-yontem">
-            <h2>⚡ Hızlı Yöntem: Konsol Script (Tavsiye Edilen)</h2>
-            <p>ZIP beklemeden, 2 dakikada takipçi listeni al!</p>
-
-            <div class="method-tabs">
-                <button class="method-tab active" data-method="followers">📥 Takipçileri Al</button>
-                <button class="method-tab" data-method="following">📤 Takip Ettiklerini Al</button>
-            </div>
+            <h2>⚡ Akıllı Script: Tek Seferde Her İkisini Topla</h2>
+            <p>Hangi sayfada olursan ol, otomatik yönlendirir ve hem takipçileri hem takip ettiklerini toplar!</p>
 
             <div class="console-steps">
-                <div class="step-card">
+                <div class="step-card highlight-step">
                     <div class="step-number">1</div>
                     <div class="step-content">
-                        <h4>Twitter'da Sayfayı Aç</h4>
-                        <p id="step1-text">Takipçi sayfanı aç: <a href="https://twitter.com/following" target="_blank"
-                                class="twitter-link">twitter.com/YOUR_USERNAME/followers</a></p>
+                        <h4>Twitter'a Git</h4>
+                        <p>Herhangi bir Twitter sayfasını aç. Script otomatik profiline yönlendirecek.</p>
+                        <a href="https://twitter.com/home" target="_blank" class="btn btn-small">🐦 Twitter'ı Aç</a>
                     </div>
                 </div>
 
                 <div class="step-card">
                     <div class="step-number">2</div>
                     <div class="step-content">
-                        <h4>Konsolu Aç</h4>
-                        <p><strong>F12</strong> tuşuna bas veya <strong>Sağ tık → İncele → Console</strong></p>
-                        <div class="keyboard-hint">
-                            <kbd>F12</kbd> veya <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd>
+                        <h4>Konsol + Yapıştırma İzni</h4>
+                        <p><kbd>F12</kbd> → Console → Önce bunu yaz:</p>
+                        <div class="allow-paste-box">
+                            <code>allow pasting</code>
+                            <button class="copy-small-btn"
+                                onclick="navigator.clipboard.writeText('allow pasting');this.textContent='✅'">📋</button>
                         </div>
                     </div>
                 </div>
@@ -273,87 +270,132 @@
                 <div class="step-card">
                     <div class="step-number">3</div>
                     <div class="step-content">
-                        <h4>Yapıştırmayı Aktif Et</h4>
-                        <p>Twitter yapıştırmayı engeller. Önce konsola şunu yaz ve Enter'a bas:</p>
-                        <div class="allow-paste-box">
-                            <code>allow pasting</code>
-                            <button class="copy-small-btn"
-                                onclick="navigator.clipboard.writeText('allow pasting')">📋</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="step-card">
-                    <div class="step-number">4</div>
-                    <div class="step-content">
-                        <h4>Kodu Kopyala ve Yapıştır</h4>
-                        <p>Aşağıdaki kodu kopyala, konsola yapıştır ve Enter'a bas:</p>
+                        <h4>Scripti Çalıştır</h4>
+                        <p>Kodu kopyala → Yapıştır → Enter. Bekle, otomatik her ikisini de toplar!</p>
                     </div>
                 </div>
             </div>
 
             <div class="code-container">
                 <div class="code-header">
-                    <span id="code-title">📥 Takipçileri Toplama Kodu</span>
+                    <span>🚀 Akıllı Script (Takipçi + Takip Edilen)</span>
                     <button class="copy-btn" id="copy-code-btn">📋 Kopyala</button>
                 </div>
-                <pre class="code-block" id="console-code">// X/Twitter Takipçi Toplama Scripti
-(async function() {
-    const users = new Set();
-    let lastCount = 0, stable = 0;
-    console.log('🔄 Takipçiler toplanıyor...');
-    
-    const scroll = setInterval(async () => {
-        document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a => {
-            const u = a.pathname.slice(1);
-            if (u && !u.includes('/')) users.add(u);
-        });
-        
-        console.log('📊 Bulunan:', users.size);
-        
-        if (users.size === lastCount) {
-            if (++stable >= 3) {
-                clearInterval(scroll);
-                const data = JSON.stringify([...users], null, 2);
-                console.log('✅ Tamamlandı! Toplam:', users.size);
-                console.log('📋 Listeyi kopyala:');
-                console.log(data);
-                prompt('Aşağıdaki listeyi kopyalayın (Ctrl+C):', [...users].join('\\n'));
-            }
-        } else { stable = 0; lastCount = users.size; }
-        
-        window.scrollBy(0, 2000);
-    }, 800);
-})();</pre>
+                <pre class="code-block" id="console-code">// 🚀 Akıllı X/Twitter Takipçi Analiz Scripti v2
+// Tek çalıştırma ile hem takipçiler hem takip edilenler!
+
+(async()=>{
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const collect=async(label)=>{
+    const users=new Set();let last=0,stable=0;
+    console.log('🔄 '+label+' toplanıyor...');
+    return new Promise(ok=>{
+        const loop=setInterval(()=>{
+            document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a=>{
+                const u=a.pathname.slice(1);
+                if(u&&!u.includes('/')&&!['home','explore','notifications','messages'].includes(u)) users.add(u);
+            });
+            console.log('📊 '+label+': '+users.size);
+            if(users.size===last){if(++stable>=3){clearInterval(loop);ok([...users]);}}
+            else{stable=0;last=users.size;}
+            window.scrollBy(0,2000);
+        },700);
+    });
+};
+
+// Kullanıcı adını bul
+let user=null;
+const profileBtn=document.querySelector('a[data-testid="AppTabBar_Profile_Link"]');
+if(profileBtn) user=profileBtn.href.split('/').pop();
+if(!user) user=prompt('Twitter kullanıcı adını gir (@sız):');
+if(!user){alert('Kullanıcı adı gerekli!');return;}
+
+console.log('👤 Kullanıcı: @'+user);
+
+// Takipçileri topla
+console.log('📥 ADIM 1: Takipçiler sayfasına gidiliyor...');
+location.href='https://x.com/'+user+'/followers';
+await wait(4000);
+const followers=await collect('Takipçi');
+console.log('✅ Takipçi: '+followers.length);
+
+// Sonucu kaydet ve takip edilenlere git
+localStorage.setItem('_xf_followers',JSON.stringify(followers));
+console.log('📤 ADIM 2: Takip edilenler sayfasına gidiliyor...');
+location.href='https://x.com/'+user+'/following';
+})();
+
+// --- Sayfa yenilendikten sonra devam et ---
+if(location.href.includes('/following')&&localStorage.getItem('_xf_followers')){
+(async()=>{
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const collect=async(label)=>{
+    const users=new Set();let last=0,stable=0;
+    console.log('🔄 '+label+' toplanıyor...');
+    return new Promise(ok=>{
+        const loop=setInterval(()=>{
+            document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a=>{
+                const u=a.pathname.slice(1);
+                if(u&&!u.includes('/')&&!['home','explore','notifications','messages'].includes(u)) users.add(u);
+            });
+            console.log('📊 '+label+': '+users.size);
+            if(users.size===last){if(++stable>=3){clearInterval(loop);ok([...users]);}}
+            else{stable=0;last=users.size;}
+            window.scrollBy(0,2000);
+        },700);
+    });
+};
+await wait(3000);
+const following=await collect('Takip Edilen');
+const followers=JSON.parse(localStorage.getItem('_xf_followers')||'[]');
+localStorage.removeItem('_xf_followers');
+
+console.log('\\n🎉 TAMAMLANDI!');
+console.log('👥 Takipçi: '+followers.length);
+console.log('👤 Takip Edilen: '+following.length);
+
+const out='=== TAKİPÇİLER ('+followers.length+') ===\\n'+followers.join('\\n')+'\\n\\n=== TAKİP EDİLENLER ('+following.length+') ===\\n'+following.join('\\n');
+console.log(out);
+prompt('📋 Kopyalamak için Ctrl+A, Ctrl+C:',out);
+})();
+}</pre>
+            </div>
+
+            <div class="step-card final-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h4>İkinci Sayfada Tekrar Çalıştır</h4>
+                    <p>Script seni takip edilenler sayfasına yönlendirecek. Orada <strong>tekrar aynı kodu
+                            yapıştır</strong> (otomatik devam eder).</p>
+                </div>
             </div>
 
             <div class="step-card final-step">
                 <div class="step-number">5</div>
                 <div class="step-content">
-                    <h4>Listeyi Buraya Yapıştır</h4>
-                    <p>Toplanan kullanıcı adlarını aşağıya yapıştır (her satırda bir kullanıcı):</p>
+                    <h4>Sonuçları Buraya Yapıştır</h4>
+                    <p>Konsoldaki listeyi kopyala ve aşağıya yapıştır:</p>
                 </div>
             </div>
 
             <div class="paste-container">
                 <div class="paste-inputs">
                     <div class="paste-box">
-                        <label>📥 Takipçiler (Followers)</label>
-                        <textarea id="followers-input"
-                            placeholder="Takipçi listesini buraya yapıştır...&#10;kullanici1&#10;kullanici2&#10;kullanici3"></textarea>
+                        <label>📥 Takipçiler</label>
+                        <textarea id="followers-input" placeholder="Takipçi listesi..."></textarea>
                     </div>
                     <div class="paste-box">
-                        <label>📤 Takip Ettiklerin (Following)</label>
-                        <textarea id="following-input"
-                            placeholder="Takip ettiklerini buraya yapıştır...&#10;kullanici1&#10;kullanici2&#10;kullanici3"></textarea>
+                        <label>📤 Takip Edilenler</label>
+                        <textarea id="following-input" placeholder="Takip edilen listesi..."></textarea>
                     </div>
                 </div>
                 <button class="btn btn-primary btn-large" id="analyze-paste-btn">🔍 Analiz Et</button>
             </div>
 
             <div class="method-note">
-                <p>💡 <strong>İpucu:</strong> Önce takipçileri, sonra takip ettiklerini topla ve her ikisini de
-                    yapıştır.</p>
+                <p>💡 <strong>Nasıl çalışır?</strong> 1) Takipçiler sayfasına gider, toplar, kaydeder. 2) Takip
+                    edilenler sayfasına yönlendirir. 3) Orada tekrar çalıştırınca devam eder ve her iki listeyi verir.
+                </p>
             </div>
         </section>
 

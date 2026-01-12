@@ -1151,6 +1151,21 @@ kbd {
     border-color: var(--accent-blue);
 }
 
+/* Highlight Step */
+.highlight-step {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: var(--accent-purple);
+}
+
+/* Small Button */
+.btn-small {
+    display: inline-block;
+    padding: 8px 16px;
+    margin-top: 8px;
+    font-size: 13px;
+    text-decoration: none;
+}
+
 /* Paste Container */
 .paste-container {
     margin-bottom: 24px;
