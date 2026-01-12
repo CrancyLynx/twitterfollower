@@ -290,7 +290,7 @@ const isFollowers=url.includes('/followers');
 const isFollowing=url.includes('/following')&&!url.includes('/followers');
 
 if(!isFollowers && !isFollowing){
-    alert('❌ Lütfen takipçi veya takip sayfasında çalıştır!\\n\\nÖrnek: x.com/kullaniciadi/followers');
+    alert('❌ Lütfen takipçi veya takip sayfasında çalıştır!\nÖrnek: x.com/kullaniciadi/followers');
     return;
 }
 
@@ -319,7 +319,7 @@ const loop=setInterval(()=>{
             // localStorage'a kaydet
             localStorage.setItem('_xanalyzer_'+type, JSON.stringify(arr));
             
-            console.log('\\n✅ '+label+' TAMAMLANDI: '+arr.length);
+            console.log('\n✅ '+label+' TAMAMLANDI: '+arr.length);
             console.log('💾 Kaydedildi!');
             
             // Diğer liste var mı kontrol et
@@ -328,17 +328,17 @@ const loop=setInterval(()=>{
             
             if(otherData){
                 const other=JSON.parse(otherData);
-                console.log('\\n🎉 HER İKİ LİSTE HAZIR!');
+                console.log('\n🎉 HER İKİ LİSTE HAZIR!');
                 const followers=isFollowers?arr:other;
                 const following=isFollowing?arr:other;
                 console.log('👥 Takipçi: '+followers.length);
                 console.log('👤 Takip: '+following.length);
                 
-                const out='TAKİPÇİLER:\\n'+followers.join('\\n')+'\\n\\nTAKİP EDİLENLER:\\n'+following.join('\\n');
+                const out='TAKİPÇİLER:\n'+followers.join('\n')+'\n\nTAKİP EDİLENLER:\n'+following.join('\n');
                 prompt('📋 Kopyala (Ctrl+A, Ctrl+C):',out);
             } else {
-                console.log('\\n👉 Şimdi diğer sayfaya git ve tekrar çalıştır!');
-                prompt('📋 '+label+' listesi:', arr.join('\\n'));
+                console.log('\n👉 Şimdi diğer sayfaya git ve tekrar çalıştır!');
+                prompt('📋 '+label+' listesi:', arr.join('\n'));
             }
         }
     } else { stable=0; last=users.size; }
@@ -353,7 +353,8 @@ const loop=setInterval(()=>{
                 <div class="step-content">
                     <h4>Diğer Sayfaya Git ve Tekrar Çalıştır</h4>
                     <p>Script bitince <strong>manuel olarak</strong> diğer sayfaya git (takip edilenler/takipçiler) ve
-                        <strong>aynı kodu tekrar yapıştır</strong>. İkisi de hazır olunca sonuç gelir!</p>
+                        <strong>aynı kodu tekrar yapıştır</strong>. İkisi de hazır olunca sonuç gelir!
+                    </p>
                 </div>
             </div>
 
