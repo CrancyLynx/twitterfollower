@@ -281,92 +281,79 @@
                     <span>🚀 Akıllı Script (Takipçi + Takip Edilen)</span>
                     <button class="copy-btn" id="copy-code-btn">📋 Kopyala</button>
                 </div>
-                <pre class="code-block" id="console-code">// 🚀 Akıllı X/Twitter Takipçi Analiz Scripti v2
-// Tek çalıştırma ile hem takipçiler hem takip edilenler!
+                <pre class="code-block" id="console-code">// 🚀 X/Twitter Takipçi Toplama v3
+// Bulunduğun sayfada çalışır, otomatik algılar!
 
 (async()=>{
-const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const collect=async(label)=>{
-    const users=new Set();let last=0,stable=0;
-    console.log('🔄 '+label+' toplanıyor...');
-    return new Promise(ok=>{
-        const loop=setInterval(()=>{
-            document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a=>{
-                const u=a.pathname.slice(1);
-                if(u&&!u.includes('/')&&!['home','explore','notifications','messages'].includes(u)) users.add(u);
-            });
-            console.log('📊 '+label+': '+users.size);
-            if(users.size===last){if(++stable>=3){clearInterval(loop);ok([...users]);}}
-            else{stable=0;last=users.size;}
-            window.scrollBy(0,2000);
-        },700);
+const url=location.href;
+const isFollowers=url.includes('/followers');
+const isFollowing=url.includes('/following')&&!url.includes('/followers');
+
+if(!isFollowers && !isFollowing){
+    alert('❌ Lütfen takipçi veya takip sayfasında çalıştır!\\n\\nÖrnek: x.com/kullaniciadi/followers');
+    return;
+}
+
+const type=isFollowers?'followers':'following';
+const label=isFollowers?'Takipçi':'Takip Edilen';
+
+console.log('🔄 '+label+' toplanıyor...');
+console.log('⏳ Otomatik scroll başladı. Bekle...');
+
+const users=new Set();
+let last=0,stable=0;
+
+const loop=setInterval(()=>{
+    document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a=>{
+        const u=a.pathname.slice(1);
+        if(u && !u.includes('/') && !['home','explore','notifications','messages','i'].includes(u)) users.add(u);
     });
-};
-
-// Kullanıcı adını bul
-let user=null;
-const profileBtn=document.querySelector('a[data-testid="AppTabBar_Profile_Link"]');
-if(profileBtn) user=profileBtn.href.split('/').pop();
-if(!user) user=prompt('Twitter kullanıcı adını gir (@sız):');
-if(!user){alert('Kullanıcı adı gerekli!');return;}
-
-console.log('👤 Kullanıcı: @'+user);
-
-// Takipçileri topla
-console.log('📥 ADIM 1: Takipçiler sayfasına gidiliyor...');
-location.href='https://x.com/'+user+'/followers';
-await wait(4000);
-const followers=await collect('Takipçi');
-console.log('✅ Takipçi: '+followers.length);
-
-// Sonucu kaydet ve takip edilenlere git
-localStorage.setItem('_xf_followers',JSON.stringify(followers));
-console.log('📤 ADIM 2: Takip edilenler sayfasına gidiliyor...');
-location.href='https://x.com/'+user+'/following';
-})();
-
-// --- Sayfa yenilendikten sonra devam et ---
-if(location.href.includes('/following')&&localStorage.getItem('_xf_followers')){
-(async()=>{
-const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const collect=async(label)=>{
-    const users=new Set();let last=0,stable=0;
-    console.log('🔄 '+label+' toplanıyor...');
-    return new Promise(ok=>{
-        const loop=setInterval(()=>{
-            document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a=>{
-                const u=a.pathname.slice(1);
-                if(u&&!u.includes('/')&&!['home','explore','notifications','messages'].includes(u)) users.add(u);
-            });
-            console.log('📊 '+label+': '+users.size);
-            if(users.size===last){if(++stable>=3){clearInterval(loop);ok([...users]);}}
-            else{stable=0;last=users.size;}
-            window.scrollBy(0,2000);
-        },700);
-    });
-};
-await wait(3000);
-const following=await collect('Takip Edilen');
-const followers=JSON.parse(localStorage.getItem('_xf_followers')||'[]');
-localStorage.removeItem('_xf_followers');
-
-console.log('\\n🎉 TAMAMLANDI!');
-console.log('👥 Takipçi: '+followers.length);
-console.log('👤 Takip Edilen: '+following.length);
-
-const out='=== TAKİPÇİLER ('+followers.length+') ===\\n'+followers.join('\\n')+'\\n\\n=== TAKİP EDİLENLER ('+following.length+') ===\\n'+following.join('\\n');
-console.log(out);
-prompt('📋 Kopyalamak için Ctrl+A, Ctrl+C:',out);
-})();
-}</pre>
+    
+    console.log('📊 '+label+': '+users.size);
+    
+    if(users.size===last){
+        if(++stable>=4){
+            clearInterval(loop);
+            const arr=[...users];
+            
+            // localStorage'a kaydet
+            localStorage.setItem('_xanalyzer_'+type, JSON.stringify(arr));
+            
+            console.log('\\n✅ '+label+' TAMAMLANDI: '+arr.length);
+            console.log('💾 Kaydedildi!');
+            
+            // Diğer liste var mı kontrol et
+            const otherType=isFollowers?'following':'followers';
+            const otherData=localStorage.getItem('_xanalyzer_'+otherType);
+            
+            if(otherData){
+                const other=JSON.parse(otherData);
+                console.log('\\n🎉 HER İKİ LİSTE HAZIR!');
+                const followers=isFollowers?arr:other;
+                const following=isFollowing?arr:other;
+                console.log('👥 Takipçi: '+followers.length);
+                console.log('👤 Takip: '+following.length);
+                
+                const out='TAKİPÇİLER:\\n'+followers.join('\\n')+'\\n\\nTAKİP EDİLENLER:\\n'+following.join('\\n');
+                prompt('📋 Kopyala (Ctrl+A, Ctrl+C):',out);
+            } else {
+                console.log('\\n👉 Şimdi diğer sayfaya git ve tekrar çalıştır!');
+                prompt('📋 '+label+' listesi:', arr.join('\\n'));
+            }
+        }
+    } else { stable=0; last=users.size; }
+    
+    window.scrollBy(0,2000);
+},700);
+})();</pre>
             </div>
 
             <div class="step-card final-step">
                 <div class="step-number">4</div>
                 <div class="step-content">
-                    <h4>İkinci Sayfada Tekrar Çalıştır</h4>
-                    <p>Script seni takip edilenler sayfasına yönlendirecek. Orada <strong>tekrar aynı kodu
-                            yapıştır</strong> (otomatik devam eder).</p>
+                    <h4>Diğer Sayfaya Git ve Tekrar Çalıştır</h4>
+                    <p>Script bitince <strong>manuel olarak</strong> diğer sayfaya git (takip edilenler/takipçiler) ve
+                        <strong>aynı kodu tekrar yapıştır</strong>. İkisi de hazır olunca sonuç gelir!</p>
                 </div>
             </div>
 
