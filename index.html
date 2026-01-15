@@ -7,8 +7,14 @@
     <title>X Takipçi Analiz | Takip Etmeyenleri Bul</title>
     <meta name="description"
         content="Twitter/X takipçi ve takip listenizi karşılaştırın. Sizi takip etmeyenleri, takip etmediklerinizi ve karşılıklı takipleri görün.">
+    <meta name="theme-color" content="#1d9bf0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -23,8 +29,10 @@
                 <span>Takipçi Analiz</span>
             </div>
             <nav class="nav-links">
-                <a href="#nasil-kullanilir" class="nav-link">Nasıl Kullanılır?</a>
-                <a href="#bookmarklet" class="nav-link">Bookmarklet</a>
+                <a href="#nasil-kullanilir" class="nav-link" data-i18n="nav.howTo">Nasıl Kullanılır?</a>
+                <a href="#hizli-yontem" class="nav-link" data-i18n="nav.quickMethod">Hızlı Yöntem</a>
+                <button class="nav-btn" id="theme-toggle" title="Tema Değiştir">🌙</button>
+                <button class="nav-btn" id="lang-toggle" title="Change Language">TR</button>
             </nav>
             <button class="menu-btn" id="menu-btn" aria-label="Menü">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -83,7 +91,11 @@
         <!-- Loading State -->
         <section class="loading-section hidden" id="loading-section">
             <div class="loader"></div>
-            <p>Veriler işleniyor...</p>
+            <p id="loading-text">Veriler işleniyor...</p>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <p class="progress-text" id="progress-text">0%</p>
         </section>
 
         <!-- Results Section -->
@@ -144,6 +156,18 @@
                         <span class="stat-value" id="mutual-count">0</span>
                         <span class="stat-label">Karşılıklı</span>
                     </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h4>📊 Takipçi/Takip Oranı</h4>
+                    <canvas id="ratio-chart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4>📈 İlişki Dağılımı</h4>
+                    <canvas id="relationship-chart"></canvas>
                 </div>
             </div>
 

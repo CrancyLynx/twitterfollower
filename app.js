@@ -27,7 +27,10 @@ const elements = {
     bookmarkletLink: document.getElementById('bookmarklet-link'),
     menuBtn: document.getElementById('menu-btn'),
     mobileNav: document.getElementById('mobile-nav'),
-    toastContainer: document.getElementById('toast-container')
+    toastContainer: document.getElementById('toast-container'),
+    progressBar: document.getElementById('progress-bar'),
+    progressText: document.getElementById('progress-text'),
+    loadingText: document.getElementById('loading-text')
 };
 
 // ===== Initialization =====
@@ -39,7 +42,21 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeMobileMenu();
     initializeConsoleSection();
     loadSnapshots();
+    registerServiceWorker();
 });
+
+// ===== Service Worker =====
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+                console.log('SW registered:', registration.scope);
+            })
+            .catch((error) => {
+                console.log('SW registration failed:', error);
+            });
+    }
+}
 
 // ===== Toast Notifications =====
 function showToast(message, type = 'info', duration = 4000) {
@@ -165,28 +182,53 @@ function initializeUpload() {
     });
 }
 
+// ===== Progress Bar =====
+function updateProgress(percent, text = null) {
+    if (elements.progressBar) {
+        elements.progressBar.style.width = percent + '%';
+    }
+    if (elements.progressText) {
+        elements.progressText.textContent = Math.round(percent) + '%';
+    }
+    if (text && elements.loadingText) {
+        elements.loadingText.textContent = text;
+    }
+}
+
 // ===== ZIP Processing =====
 async function processZipFile(file) {
     showLoading();
+    updateProgress(0, 'ZIP dosyası açılıyor...');
     showToast('Dosya işleniyor...', 'info');
 
     try {
         const zip = await JSZip.loadAsync(file);
+        updateProgress(20, 'Dosyalar taranıyor...');
 
         // Find follower and following files
         let followerData = null;
         let followingData = null;
+        const files = Object.entries(zip.files);
+        const totalFiles = files.length;
+        let processed = 0;
 
-        for (const [filename, zipEntry] of Object.entries(zip.files)) {
+        for (const [filename, zipEntry] of files) {
+            processed++;
+            const progress = 20 + (processed / totalFiles * 60);
+
             if (filename.includes('follower') && filename.endsWith('.js')) {
+                updateProgress(progress, 'Takipçiler okunuyor...');
                 const content = await zipEntry.async('string');
                 followerData = parseTwitterJS(content, 'follower');
             }
             if (filename.includes('following') && filename.endsWith('.js')) {
+                updateProgress(progress, 'Takip edilenler okunuyor...');
                 const content = await zipEntry.async('string');
                 followingData = parseTwitterJS(content, 'following');
             }
         }
+
+        updateProgress(90, 'Analiz yapılıyor...');
 
         if (!followerData || !followingData) {
             throw new Error('Takipçi veya takip edilen verileri bulunamadı. Doğru ZIP dosyasını yüklediğinizden emin olun.');
@@ -195,6 +237,7 @@ async function processZipFile(file) {
         currentData.followers = followerData;
         currentData.following = followingData;
 
+        updateProgress(100, 'Tamamlandı!');
         analyzeData();
         showResults();
         showToast('Analiz tamamlandı! 🎉', 'success');
@@ -715,3 +758,183 @@ function analyzePastedData() {
     showResults();
     showToast(`Analiz tamamlandı! ${followers.length} takipçi, ${following.length} takip edilen`, 'success');
 }
+
+// ===== Theme Toggle =====
+function initializeTheme() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+            showToast(newTheme === 'light' ? '☀️ Aydınlık tema' : '🌙 Karanlık tema', 'info');
+        });
+    }
+}
+
+function updateThemeIcon(theme) {
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
+}
+
+// ===== Language Toggle =====
+const translations = {
+    tr: {
+        'nav.howTo': 'Nasıl Kullanılır?',
+        'nav.quickMethod': 'Hızlı Yöntem',
+        'hero.title': 'X/Twitter Takipçi Analizi',
+        'hero.subtitle': 'Seni takip etmeyenleri bul, GT sonrası çıkanları takip et'
+    },
+    en: {
+        'nav.howTo': 'How to Use',
+        'nav.quickMethod': 'Quick Method',
+        'hero.title': 'X/Twitter Follower Analysis',
+        'hero.subtitle': 'Find unfollowers, track who left after F4F'
+    }
+};
+
+let currentLang = localStorage.getItem('lang') || 'tr';
+
+function initializeLanguage() {
+    const langToggle = document.getElementById('lang-toggle');
+    updateLanguageUI();
+
+    if (langToggle) {
+        langToggle.addEventListener('click', () => {
+            currentLang = currentLang === 'tr' ? 'en' : 'tr';
+            localStorage.setItem('lang', currentLang);
+            updateLanguageUI();
+            showToast(currentLang === 'tr' ? '🇹🇷 Türkçe' : '🇬🇧 English', 'info');
+        });
+    }
+}
+
+function updateLanguageUI() {
+    const langToggle = document.getElementById('lang-toggle');
+    if (langToggle) {
+        langToggle.textContent = currentLang.toUpperCase();
+    }
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[currentLang] && translations[currentLang][key]) {
+            el.textContent = translations[currentLang][key];
+        }
+    });
+}
+
+// ===== Charts =====
+let ratioChart = null;
+let relationshipChart = null;
+
+function renderCharts() {
+    if (typeof Chart === 'undefined') return;
+
+    const ratioCtx = document.getElementById('ratio-chart');
+    const relationshipCtx = document.getElementById('relationship-chart');
+
+    if (!ratioCtx || !relationshipCtx) return;
+
+    // Destroy existing charts
+    if (ratioChart) ratioChart.destroy();
+    if (relationshipChart) relationshipChart.destroy();
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
+                    padding: 12,
+                    font: { size: 12 }
+                }
+            }
+        }
+    };
+
+    // Ratio Chart (Followers vs Following)
+    ratioChart = new Chart(ratioCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Takipçi', 'Takip Edilen'],
+            datasets: [{
+                data: [currentData.followers.length, currentData.following.length],
+                backgroundColor: ['#1d9bf0', '#a855f7'],
+                borderColor: ['#1d9bf0', '#a855f7'],
+                borderWidth: 0
+            }]
+        },
+        options: chartOptions
+    });
+
+    // Relationship Chart
+    relationshipChart = new Chart(relationshipCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Karşılıklı', 'Takip Etmeyen', 'Takip Etmediğin'],
+            datasets: [{
+                data: [
+                    currentData.mutual.length,
+                    currentData.notFollowingBack.length,
+                    currentData.youDontFollow.length
+                ],
+                backgroundColor: ['#00ba7c', '#f4212e', '#ff7a00'],
+                borderWidth: 0
+            }]
+        },
+        options: chartOptions
+    });
+}
+
+// ===== CSV Export =====
+function exportToCSV() {
+    const headers = ['Type', 'Username', 'Profile URL'];
+    const rows = [];
+
+    currentData.notFollowingBack.forEach(u => {
+        rows.push(['Not Following Back', u.accountId, u.userLink]);
+    });
+
+    currentData.youDontFollow.forEach(u => {
+        rows.push(['You Dont Follow', u.accountId, u.userLink]);
+    });
+
+    currentData.mutual.forEach(u => {
+        rows.push(['Mutual', u.accountId, u.userLink]);
+    });
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `twitter_analysis_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+
+    showToast('CSV dosyası indirildi! 📊', 'success');
+}
+
+// Initialize theme and language on load
+document.addEventListener('DOMContentLoaded', () => {
+    initializeTheme();
+    initializeLanguage();
+});
+
+// Update showResults to also render charts
+const originalShowResults = showResults;
+showResults = function () {
+    originalShowResults();
+    setTimeout(renderCharts, 100);
+};
