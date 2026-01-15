@@ -305,24 +305,19 @@
                     <span>🚀 Akıllı Script (Takipçi + Takip Edilen)</span>
                     <button class="copy-btn" id="copy-code-btn">📋 Kopyala</button>
                 </div>
-                <pre class="code-block" id="console-code">// 🚀 X/Twitter Takipçi Toplama v3
-// Bulunduğun sayfada çalışır, otomatik algılar!
-
+                <pre class="code-block" id="console-code">// 🚀 X/Twitter Takipçi Toplama v4
 (async()=>{
 const url=location.href;
 const isFollowers=url.includes('/followers');
-const isFollowing=url.includes('/following')&&!url.includes('/followers');
+const isFollowing=url.includes('/following')&&!isFollowers;
 
 if(!isFollowers && !isFollowing){
-    alert('❌ Lütfen takipçi veya takip sayfasında çalıştır!\nÖrnek: x.com/kullaniciadi/followers');
+    alert('Takipçi veya takip sayfasına git!');
     return;
 }
 
-const type=isFollowers?'followers':'following';
-const label=isFollowers?'Takipçi':'Takip Edilen';
-
-console.log('🔄 '+label+' toplanıyor...');
-console.log('⏳ Otomatik scroll başladı. Bekle...');
+const type=isFollowers?'TAKİPÇİ':'TAKİP';
+console.log('🔄 '+type+' toplanıyor...');
 
 const users=new Set();
 let last=0,stable=0;
@@ -330,43 +325,45 @@ let last=0,stable=0;
 const loop=setInterval(()=>{
     document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a=>{
         const u=a.pathname.slice(1);
-        if(u && !u.includes('/') && !['home','explore','notifications','messages','i'].includes(u)) users.add(u);
+        if(u && !u.includes('/') && !['home','explore','notifications','messages','i','search'].includes(u)) 
+            users.add(u);
     });
-    
-    console.log('📊 '+label+': '+users.size);
+    console.log('📊 '+users.size+' bulundu');
     
     if(users.size===last){
         if(++stable>=4){
             clearInterval(loop);
-            const arr=[...users];
+            const list=[...users];
+            const key=isFollowers?'_xf':'_xg';
+            localStorage.setItem(key,list.join(','));
             
-            // localStorage'a kaydet
-            localStorage.setItem('_xanalyzer_'+type, JSON.stringify(arr));
+            console.log('\n✅ '+type+' TAMAMLANDI: '+list.length);
             
-            console.log('\n✅ '+label+' TAMAMLANDI: '+arr.length);
-            console.log('💾 Kaydedildi!');
+            // Diğer liste var mı?
+            const otherKey=isFollowers?'_xg':'_xf';
+            const other=localStorage.getItem(otherKey);
             
-            // Diğer liste var mı kontrol et
-            const otherType=isFollowers?'following':'followers';
-            const otherData=localStorage.getItem('_xanalyzer_'+otherType);
-            
-            if(otherData){
-                const other=JSON.parse(otherData);
-                console.log('\n🎉 HER İKİ LİSTE HAZIR!');
-                const followers=isFollowers?arr:other;
-                const following=isFollowing?arr:other;
-                console.log('👥 Takipçi: '+followers.length);
-                console.log('👤 Takip: '+following.length);
+            if(other){
+                const otherList=other.split(',');
+                const f=isFollowers?list:otherList;
+                const g=isFollowing?list:otherList;
                 
-                const out='TAKİPÇİLER:\n'+followers.join('\n')+'\n\nTAKİP EDİLENLER:\n'+following.join('\n');
-                prompt('📋 Kopyala (Ctrl+A, Ctrl+C):',out);
+                console.log('\n🎉 HER İKİ LİSTE HAZIR!');
+                console.log('Takipçi:',f.length,'Takip:',g.length);
+                console.log('\n=== TAKİPÇİLER ===');
+                f.forEach(u=>console.log(u));
+                console.log('\n=== TAKİP EDİLENLER ===');
+                g.forEach(u=>console.log(u));
+                
+                localStorage.removeItem('_xf');
+                localStorage.removeItem('_xg');
             } else {
-                console.log('\n👉 Şimdi diğer sayfaya git ve tekrar çalıştır!');
-                prompt('📋 '+label+' listesi:', arr.join('\n'));
+                console.log('\n📋 '+type+' LİSTESİ:');
+                list.forEach(u=>console.log(u));
+                console.log('\n👉 Diğer sayfaya git, scripti tekrar çalıştır!');
             }
         }
     } else { stable=0; last=users.size; }
-    
     window.scrollBy(0,2000);
 },700);
 })();</pre>
