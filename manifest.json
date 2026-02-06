@@ -1,24 +1,37 @@
 {
   "name": "X Takipçi Analiz",
-  "short_name": "Takipçi",
+  "short_name": "X Analyzer",
   "description": "Twitter/X takipçi ve takip listenizi analiz edin. Sizi takip etmeyenleri bulun.",
-  "start_url": "/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#1d9bf0",
+  "background_color": "#0a0a12",
+  "theme_color": "#7c3aed",
   "orientation": "portrait-primary",
   "icons": [
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["social", "utilities"],

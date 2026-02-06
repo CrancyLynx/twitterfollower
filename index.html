@@ -5,420 +5,528 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>X Takipçi Analiz | Takip Etmeyenleri Bul</title>
-    <meta name="description"
-        content="Twitter/X takipçi ve takip listenizi karşılaştırın. Sizi takip etmeyenleri, takip etmediklerinizi ve karşılıklı takipleri görün.">
-    <meta name="theme-color" content="#1d9bf0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Twitter/X takipçi ve takip listenizi karşılaştırın. Sizi takip etmeyenleri görün.">
+    <meta name="theme-color" content="#7c3aed">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 </head>
 
 <body>
-    <div class="app-container">
+    <!-- Background Effects -->
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-3" aria-hidden="true"></div>
+
+    <div class="app">
         <!-- Header -->
         <header class="header">
-            <div class="logo">
-                <svg viewBox="0 0 24 24" class="x-logo">
-                    <path
-                        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                <span>Takipçi Analiz</span>
+            <div class="header-content">
+                <a href="#" class="logo" aria-label="X Analyzer Ana Sayfa">
+                    <div class="logo-circle">
+                        <svg viewBox="0 0 24 24" class="logo-icon" fill="currentColor" aria-hidden="true">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                        </svg>
+                    </div>
+                    <span>X <span class="logo-accent">Analyzer</span></span>
+                </a>
+
+                <div class="header-right">
+                    <nav class="nav-links" aria-label="Ana navigasyon">
+                        <a href="#paste-section" data-i18n="nav.script">Analiz</a>
+                        <a href="#results-content" data-i18n="nav.results">Sonuçlar</a>
+                    </nav>
+                    <div class="nav-actions">
+                        <button class="action-btn" id="theme-toggle" aria-label="Tema değiştir">
+                            <svg class="theme-icon theme-sun hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="5" />
+                                <line x1="12" y1="1" x2="12" y2="3" />
+                                <line x1="12" y1="21" x2="12" y2="23" />
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                                <line x1="1" y1="12" x2="3" y2="12" />
+                                <line x1="21" y1="12" x2="23" y2="12" />
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                            </svg>
+                            <svg class="theme-icon theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                            </svg>
+                        </button>
+                        <button class="action-btn-text lang-btn" id="lang-toggle" aria-label="Dil değiştir">TR</button>
+                        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="x-link" aria-label="X (Twitter) sitesine git">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                            </svg>
+                            <span data-i18n="nav.goToX">X'e Git</span>
+                        </a>
+                    </div>
+                </div>
             </div>
-            <nav class="nav-links">
-                <a href="#nasil-kullanilir" class="nav-link" data-i18n="nav.howTo">Nasıl Kullanılır?</a>
-                <a href="#hizli-yontem" class="nav-link" data-i18n="nav.quickMethod">Hızlı Yöntem</a>
-                <button class="nav-btn" id="theme-toggle" title="Tema Değiştir">🌙</button>
-                <button class="nav-btn" id="lang-toggle" title="Change Language">TR</button>
-            </nav>
-            <button class="menu-btn" id="menu-btn" aria-label="Menü">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <line x1="3" y1="12" x2="21" y2="12" />
-                    <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-            </button>
         </header>
 
-        <!-- Mobile Navigation -->
-        <nav class="mobile-nav" id="mobile-nav">
-            <div class="mobile-nav-links">
-                <a href="#upload-section" class="mobile-nav-link">📤 Veri Yükle</a>
-                <a href="#nasil-kullanilir" class="mobile-nav-link">📖 Nasıl Kullanılır?</a>
-                <a href="#bookmarklet" class="mobile-nav-link">⚡ Bookmarklet</a>
-            </div>
-        </nav>
-
-        <!-- Hero Section -->
+        <!-- Hero -->
         <section class="hero">
-            <h1>X/Twitter Takipçi Analizi</h1>
-            <p class="hero-subtitle">Seni takip etmeyenleri bul, GT sonrası çıkanları takip et</p>
-        </section>
-
-        <!-- Upload Section -->
-        <section class="upload-section" id="upload-section">
-            <div class="upload-card">
-                <div class="upload-area" id="upload-area">
-                    <div class="upload-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
-                        </svg>
-                    </div>
-                    <h3>Twitter Verinizi Yükleyin</h3>
-                    <p>ZIP dosyasını sürükleyip bırakın veya tıklayarak seçin</p>
-                    <input type="file" id="file-input" accept=".zip" hidden>
-                    <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
-                        Dosya Seç
-                    </button>
+            <div class="hero-content">
+                <div class="hero-badge">✨ Kampüs Edition</div>
+                <h1 class="hero-title">
+                    <span data-i18n="hero.line1">Takipçi Analizinde</span><br>
+                    <span class="gradient-text" data-i18n="hero.line2">Zirveye Ulaşın.</span>
+                </h1>
+                <p class="hero-desc" data-i18n="hero.subtitle">
+                    Twitter profilinizi derinlemesine analiz edin. Sizi takip etmeyenleri anında tespit edin.
+                </p>
+                <div class="hero-btns">
+                    <a href="#central-panel" class="btn-primary">
+                        <span data-i18n="hero.cta">Hemen Başla</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13 17 5-5-5-5M6 17l5-5-5-5"/></svg>
+                    </a>
                 </div>
-                <div class="upload-info">
-                    <h4>📥 Twitter Verisini Nasıl İndiririm?</h4>
-                    <ol>
-                        <li>X/Twitter → Ayarlar → Hesabın → Verilerini indir</li>
-                        <li>Şifrenizi girin ve "Arşiv iste" butonuna tıklayın</li>
-                        <li>E-posta gelince ZIP dosyasını indirin</li>
-                        <li>ZIP dosyasını buraya yükleyin</li>
-                    </ol>
+            </div>
+            <div class="hero-visual" aria-hidden="true">
+                <!-- Modern network/analysis SVG illustration -->
+                <div class="hero-illustration">
+                    <svg viewBox="0 0 300 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#a855f7;stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                        </defs>
+                        <!-- Connection lines -->
+                        <line x1="150" y1="100" x2="80" y2="50" stroke="url(#grad1)" stroke-width="2" opacity="0.5" class="anim-line"/>
+                        <line x1="150" y1="100" x2="240" y2="60" stroke="url(#grad1)" stroke-width="2" opacity="0.5" class="anim-line"/>
+                        <line x1="150" y1="100" x2="60" y2="170" stroke="url(#grad2)" stroke-width="2" opacity="0.4" class="anim-line"/>
+                        <line x1="150" y1="100" x2="250" y2="180" stroke="url(#grad2)" stroke-width="2" opacity="0.4" class="anim-line"/>
+                        <line x1="150" y1="100" x2="100" y2="230" stroke="url(#grad1)" stroke-width="2" opacity="0.3" class="anim-line"/>
+                        <line x1="150" y1="100" x2="210" y2="240" stroke="url(#grad1)" stroke-width="2" opacity="0.3" class="anim-line"/>
+                        <!-- Central node -->
+                        <circle cx="150" cy="100" r="28" fill="url(#grad1)" filter="url(#glow)" class="anim-pulse"/>
+                        <text x="150" y="106" text-anchor="middle" fill="white" font-size="18" font-weight="800">X</text>
+                        <!-- Satellite nodes -->
+                        <circle cx="80" cy="50" r="16" fill="url(#grad2)" opacity="0.9" class="anim-float-1"/>
+                        <circle cx="240" cy="60" r="14" fill="url(#grad2)" opacity="0.8" class="anim-float-2"/>
+                        <circle cx="60" cy="170" r="12" fill="url(#grad1)" opacity="0.7" class="anim-float-3"/>
+                        <circle cx="250" cy="180" r="15" fill="url(#grad1)" opacity="0.75" class="anim-float-1"/>
+                        <circle cx="100" cy="230" r="10" fill="url(#grad2)" opacity="0.6" class="anim-float-2"/>
+                        <circle cx="210" cy="240" r="13" fill="url(#grad2)" opacity="0.65" class="anim-float-3"/>
+                        <!-- User icons on nodes -->
+                        <text x="80" y="54" text-anchor="middle" fill="white" font-size="12">👤</text>
+                        <text x="240" y="64" text-anchor="middle" fill="white" font-size="11">👤</text>
+                        <text x="60" y="174" text-anchor="middle" fill="white" font-size="10">👤</text>
+                        <text x="250" y="184" text-anchor="middle" fill="white" font-size="11">👤</text>
+                        <text x="100" y="234" text-anchor="middle" fill="white" font-size="9">👤</text>
+                        <text x="210" y="244" text-anchor="middle" fill="white" font-size="10">👤</text>
+                    </svg>
                 </div>
             </div>
         </section>
 
-        <!-- Loading State -->
-        <section class="loading-section hidden" id="loading-section">
-            <div class="loader"></div>
-            <p id="loading-text">Veriler işleniyor...</p>
-            <div class="progress-container">
-                <div class="progress-bar" id="progress-bar"></div>
-            </div>
-            <p class="progress-text" id="progress-text">0%</p>
-        </section>
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="premium-panel" id="central-panel">
+                <!-- Paste Section -->
+                <div class="panel-section" id="paste-section">
+                    <div class="section-header">
+                        <h2 data-i18n="paste.title">📋 Verileri Yapıştır</h2>
+                        <p data-i18n="paste.subtitle">Hesap listelerini buraya ekleyin</p>
+                    </div>
 
-        <!-- Results Section -->
-        <section class="results-section hidden" id="results-section">
-            <!-- Stats Overview -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon followers">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                            <circle cx="9" cy="7" r="4" />
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="total-followers">0</span>
-                        <span class="stat-label">Takipçi</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon following">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                            <circle cx="9" cy="7" r="4" />
-                            <line x1="19" y1="8" x2="19" y2="14" />
-                            <line x1="22" y1="11" x2="16" y2="11" />
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="total-following">0</span>
-                        <span class="stat-label">Takip Edilen</span>
-                    </div>
-                </div>
-                <div class="stat-card warning">
-                    <div class="stat-icon not-following">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                            <circle cx="9" cy="7" r="4" />
-                            <line x1="17" y1="11" x2="22" y2="11" />
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="not-following-back">0</span>
-                        <span class="stat-label">Takip Etmeyen</span>
-                    </div>
-                </div>
-                <div class="stat-card success">
-                    <div class="stat-icon mutual">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                            <circle cx="9" cy="7" r="4" />
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="mutual-count">0</span>
-                        <span class="stat-label">Karşılıklı</span>
-                    </div>
-                </div>
-            </div>
+                    <div class="paste-grid">
+                        <div class="paste-box">
+                            <div class="paste-label">
+                                <span data-i18n="paste.followers">Takipçiler</span>
+                                <span class="count-badge" id="followers-count">0</span>
+                            </div>
+                            <textarea id="followers-input" placeholder="Takipçi listesini buraya yapıştır..." data-i18n-placeholder="paste.followersPlaceholder"></textarea>
+                        </div>
 
-            <!-- Charts Section -->
-            <div class="charts-grid">
-                <div class="chart-card">
-                    <h4>📊 Takipçi/Takip Oranı</h4>
-                    <canvas id="ratio-chart"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h4>📈 İlişki Dağılımı</h4>
-                    <canvas id="relationship-chart"></canvas>
-                </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="tabs-container">
-                <div class="tabs">
-                    <button class="tab active" data-tab="not-following">
-                        <span class="tab-icon">❌</span>
-                        Seni Takip Etmeyenler
-                        <span class="tab-count" id="tab-not-following-count">0</span>
-                    </button>
-                    <button class="tab" data-tab="you-dont-follow">
-                        <span class="tab-icon">👤</span>
-                        Takip Etmediklerin
-                        <span class="tab-count" id="tab-you-dont-follow-count">0</span>
-                    </button>
-                    <button class="tab" data-tab="mutual">
-                        <span class="tab-icon">🤝</span>
-                        Karşılıklı Takip
-                        <span class="tab-count" id="tab-mutual-count">0</span>
-                    </button>
-                </div>
-
-                <!-- Search & Actions -->
-                <div class="list-actions">
-                    <div class="search-box">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8" />
-                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                        <input type="text" id="search-input" placeholder="Kullanıcı ara...">
+                        <div class="paste-box">
+                            <div class="paste-label">
+                                <span data-i18n="paste.following">Takip Edilenler</span>
+                                <span class="count-badge" id="following-count">0</span>
+                            </div>
+                            <textarea id="following-input" placeholder="Takip edilen listesini buraya yapıştır..." data-i18n-placeholder="paste.followingPlaceholder"></textarea>
+                        </div>
                     </div>
-                    <div class="action-buttons">
-                        <button class="btn btn-secondary" id="save-snapshot-btn">
-                            💾 Snapshot Kaydet
-                        </button>
-                        <button class="btn btn-secondary" id="export-btn">
-                            📤 Dışa Aktar
+
+                    <div class="analyze-footer">
+                        <button class="btn-premium-lg" id="analyze-paste-btn">
+                            <span data-i18n="paste.analyze">Analizi Başlat</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m13 17 5-5-5-5M6 17l5-5-5-5" />
+                            </svg>
                         </button>
                     </div>
                 </div>
 
-                <!-- User Lists -->
-                <div class="tab-content active" id="content-not-following">
-                    <div class="user-list" id="list-not-following"></div>
-                </div>
-                <div class="tab-content" id="content-you-dont-follow">
-                    <div class="user-list" id="list-you-dont-follow"></div>
-                </div>
-                <div class="tab-content" id="content-mutual">
-                    <div class="user-list" id="list-mutual"></div>
-                </div>
-            </div>
-        </section>
+                <div class="panel-divider"></div>
 
-        <!-- Snapshots Section -->
-        <section class="snapshots-section hidden" id="snapshots-section">
-            <h2>📊 Geçmiş Karşılaştırma</h2>
-            <div class="snapshots-container">
-                <div class="snapshot-select">
-                    <label>Önceki Snapshot:</label>
-                    <select id="snapshot-select"></select>
-                </div>
-                <div class="changes-summary" id="changes-summary"></div>
-                <div class="changes-list" id="changes-list"></div>
-            </div>
-        </section>
-
-        <!-- How to Use Section -->
-        <section class="info-section" id="nasil-kullanilir">
-            <h2>📖 Nasıl Kullanılır?</h2>
-            <div class="info-grid">
-                <div class="info-card">
-                    <div class="info-step">1</div>
-                    <h3>Twitter Verisini İndir</h3>
-                    <p>X/Twitter ayarlarından "Verilerini indir" seçeneğini kullanarak arşivinizi isteyin.</p>
-                </div>
-                <div class="info-card">
-                    <div class="info-step">2</div>
-                    <h3>ZIP Dosyasını Yükle</h3>
-                    <p>İndirdiğiniz ZIP dosyasını bu sayfaya sürükleyip bırakın veya dosya seç butonunu kullanın.</p>
-                </div>
-                <div class="info-card">
-                    <div class="info-step">3</div>
-                    <h3>Sonuçları İncele</h3>
-                    <p>Sizi takip etmeyenleri, takip etmediklerinizi ve karşılıklı takipleri görün.</p>
-                </div>
-                <div class="info-card">
-                    <div class="info-step">4</div>
-                    <h3>Snapshot Kaydet</h3>
-                    <p>Düzenli olarak snapshot kaydedin, GT sonrası sizi takipten çıkanları bulun.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Console Script Section -->
-        <section class="console-section" id="hizli-yontem">
-            <h2>⚡ Akıllı Script: Tek Seferde Her İkisini Topla</h2>
-            <p>Hangi sayfada olursan ol, otomatik yönlendirir ve hem takipçileri hem takip ettiklerini toplar!</p>
-
-            <div class="console-steps">
-                <div class="step-card highlight-step">
-                    <div class="step-number">1</div>
-                    <div class="step-content">
-                        <h4>Twitter'a Git</h4>
-                        <p>Herhangi bir Twitter sayfasını aç. Script otomatik profiline yönlendirecek.</p>
-                        <a href="https://twitter.com/home" target="_blank" class="btn btn-small">🐦 Twitter'ı Aç</a>
+                <!-- How To / Script Section -->
+                <div class="panel-section" id="how-to">
+                    <div class="section-header">
+                        <h2 data-i18n="script.toggle">⚡ Verileri Nasıl Alırım?</h2>
+                        <p data-i18n="script.subtitle">Twitter profilinizden verileri otomatik toplamak için aşağıdaki kodu kullanın</p>
                     </div>
-                </div>
 
-                <div class="step-card">
-                    <div class="step-number">2</div>
-                    <div class="step-content">
-                        <h4>Konsol + Yapıştırma İzni</h4>
-                        <p><kbd>F12</kbd> → Console → Önce bunu yaz:</p>
-                        <div class="allow-paste-box">
-                            <code>allow pasting</code>
-                            <button class="copy-small-btn"
-                                onclick="navigator.clipboard.writeText('allow pasting');this.textContent='✅'">📋</button>
+                    <div class="steps-row">
+                        <div class="mini-step">
+                            <div class="mini-step-icon">🌐</div>
+                            <div class="mini-step-text">
+                                <strong data-i18n="step1.title">Twitter'a Git</strong>
+                                <p data-i18n="step1.desc">Takipçi listeni aç</p>
+                            </div>
+                        </div>
+                        <div class="mini-step">
+                            <div class="mini-step-icon">💻</div>
+                            <div class="mini-step-text">
+                                <strong data-i18n="step2.title">Konsolu Aç</strong>
+                                <p><kbd>F12</kbd> <span data-i18n="step2.desc">tuşuna bas</span></p>
+                            </div>
+                        </div>
+                        <div class="mini-step">
+                            <div class="mini-step-icon">📋</div>
+                            <div class="mini-step-text">
+                                <strong data-i18n="step3.title">Scripti Çalıştır</strong>
+                                <p data-i18n="step3.desc">Aşağıdaki kodu yapıştır</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="code-container-modern">
+                        <div class="code-container-header">
+                            <div class="code-id">Takipçi Toplama Scripti v9.0</div>
+                            <button class="btn-copy-sm" id="copy-code-btn" aria-label="Kodu kopyala">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                                <span data-i18n="code.copy">Kopyala</span>
+                            </button>
+                        </div>
+                        <div class="code-body">
+                            <pre id="console-code">// 🚀 X/Twitter Takipçi Toplama v11.0
+// Takipçi VEYA takip sayfasında F12 &gt; Console'a yapıştırın
+// SPA uyumlu — sayfa yenilenmeden doğru çalışır
+(async()=&gt;{
+// Önceki çalışan script varsa durdur
+if(window._xCollector){clearInterval(window._xCollector);console.log('⏹ Önceki toplama durduruldu.');}
+
+const checkPage=()=&gt;{
+    const p=location.pathname.split('/').filter(Boolean);
+    if(p.length&gt;=2 &amp;&amp; (p[1]==='followers'||p[1]==='following'))
+        return {page:p[1],user:p[0]};
+    return null;
+};
+
+const info=checkPage();
+if(!info){
+    alert('❌ Takipçi veya takip sayfasında çalıştırın!\n\nÖrn: x.com/kullanici/followers');
+    return;
+}
+
+const {page,user}=info;
+const type=page==='followers'?'TAKİPÇİ':'TAKİP';
+const otherType=page==='followers'?'TAKİP':'TAKİPÇİ';
+const otherPage=page==='followers'?'following':'followers';
+const myKey=page==='followers'?'_xf':'_xg';
+const otherKey=page==='followers'?'_xg':'_xf';
+
+const reserved=new Set(['home','explore','notifications','messages',
+'i','search','settings','compose','intent','tos','privacy',
+'rules','about','help','verified','premium','login','signup',
+'account','hashtag','lists','bookmarks','communities']);
+
+// 1) Sayfanın en üstüne git ve DOM'un tazelenmesini bekle
+window.scrollTo(0,0);
+console.log('⏳ Sayfa hazırlanıyor...');
+await new Promise(r=&gt;setTimeout(r,2000));
+
+// 2) Şimdi topla — sadece ŞU ANKİ UserCell'leri say
+const users=new Set();
+let last=0,stable=0,round=0;
+
+console.log('🔄 @'+user+' '+type+' toplanıyor...');
+
+window._xCollector=setInterval(()=&gt;{
+    // URL değiştiyse dur (SPA navigasyonu)
+    const now=checkPage();
+    if(!now||now.page!==page||now.user!==user){
+        clearInterval(window._xCollector);
+        window._xCollector=null;
+        console.log('⚠️ Sayfa değişti, toplama durdu.');
+        return;
+    }
+
+    // Sadece görünür UserCell'lerden topla
+    document.querySelectorAll('[data-testid="UserCell"]').forEach(cell=&gt;{
+        // Her hücrede birden fazla link olabilir (avatar + isim)
+        // Sadece ilk geçerli kullanıcıyı al
+        const links=cell.querySelectorAll('a[role="link"]');
+        for(const a of links){
+            const h=a.getAttribute('href');
+            if(!h||!h.startsWith('/'))continue;
+            const raw=h.split('/').filter(Boolean);
+            // Sadece tek parçalı path'ler kullanıcı adıdır
+            if(raw.length!==1)continue;
+            const u=raw[0].toLowerCase();
+            if(u.length&lt;1||u.length&gt;15)continue;
+            if(!/^[a-z0-9_]+$/.test(u))continue;
+            if(reserved.has(u))continue;
+            if(u===user.toLowerCase())continue;
+            users.add(u);
+            break;
+        }
+    });
+
+    round++;
+    if(round%3===0||users.size!==last)
+        console.log('📊 '+users.size+' '+type.toLowerCase()+' (scroll #'+round+')');
+
+    if(users.size===last){
+        if(++stable&gt;=8){
+            clearInterval(window._xCollector);
+            window._xCollector=null;
+
+            const list=[...users];
+            localStorage.setItem(myKey,JSON.stringify(list));
+            console.log('\n✅ '+type+' TAMAMLANDI: '+list.length+' kişi');
+            console.log('📋 Liste:\n'+list.join('\n'));
+
+            const otherRaw=localStorage.getItem(otherKey);
+            if(otherRaw){
+                try{
+                    const o=JSON.parse(otherRaw);
+                    const f=page==='followers'?list:o;
+                    const g=page==='following'?list:o;
+                    console.log('\n🎉 HER İKİ LİSTE HAZIR!');
+                    console.log('📥 TAKİPÇİLER: '+f.length);
+                    console.log('📤 TAKİP: '+g.length);
+                    alert('✅ Her iki liste tamamlandı!\n\n'
+                        +'Takipçi: '+f.length+'\n'
+                        +'Takip: '+g.length+'\n\n'
+                        +'Artık siteye yapıştırabilirsiniz.');
+                    localStorage.removeItem('_xf');
+                    localStorage.removeItem('_xg');
+                }catch(e){
+                    localStorage.removeItem(otherKey);
+                    alert('✅ '+type+': '+list.length+' kişi!\n\n'
+                        +'👉 Şimdi '+otherType+' sayfasına gidin:\n'
+                        +'x.com/'+user+'/'+otherPage+'\n\n'
+                        +'Scripti tekrar yapıştırıp Enter\'a basın.');
+                }
+            } else {
+                alert('✅ '+type+': '+list.length+' kişi kaydedildi!\n\n'
+                    +'👉 Şimdi '+otherType+' sayfasına gidin:\n'
+                    +'x.com/'+user+'/'+otherPage+'\n\n'
+                    +'Aynı scripti tekrar yapıştırıp Enter\'a basın.\n'
+                    +'(Veriler kaybolmaz, localStorage\'da kalır)');
+            }
+        }
+    } else { stable=0; last=users.size; }
+    window.scrollBy(0,3000);
+},900);
+})();</pre>
                         </div>
                     </div>
                 </div>
 
-                <div class="step-card">
-                    <div class="step-number">3</div>
-                    <div class="step-content">
-                        <h4>Scripti Çalıştır</h4>
-                        <p>Kodu kopyala → Yapıştır → Enter. Bekle, otomatik her ikisini de toplar!</p>
+                <div class="panel-divider hidden" id="results-divider"></div>
+
+                <!-- Results Section -->
+                <div class="panel-section hidden" id="results-content">
+                    <div class="section-header">
+                        <h2 data-i18n="results.title">📊 Analiz Özeti</h2>
+                    </div>
+
+                    <div class="stats-grid-premium">
+                        <div class="stat-item">
+                            <div class="stat-icon-circle blue">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                </svg>
+                            </div>
+                            <div class="stat-data">
+                                <span class="stat-value" id="total-followers">0</span>
+                                <span class="stat-label" data-i18n="stats.followers">Takipçi</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-item">
+                            <div class="stat-icon-circle purple">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <polyline points="17 11 19 13 23 9" />
+                                </svg>
+                            </div>
+                            <div class="stat-data">
+                                <span class="stat-value" id="total-following">0</span>
+                                <span class="stat-label" data-i18n="stats.following">Takip Edilen</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-item">
+                            <div class="stat-icon-circle red">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="15" y1="9" x2="9" y2="15" />
+                                    <line x1="9" y1="9" x2="15" y2="15" />
+                                </svg>
+                            </div>
+                            <div class="stat-data">
+                                <span class="stat-value" id="not-following-back">0</span>
+                                <span class="stat-label" data-i18n="stats.notFollowing">Takip Etmeyen</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-item">
+                            <div class="stat-icon-circle green">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M20 8v6M23 11h-6" />
+                                </svg>
+                            </div>
+                            <div class="stat-data">
+                                <span class="stat-value" id="mutual-count">0</span>
+                                <span class="stat-label" data-i18n="stats.mutual">Karşılıklı</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-container-premium">
+                        <div class="chart-box">
+                            <h4 data-i18n="charts.ratio">Takipçi / Takip Oranı</h4>
+                            <canvas id="ratio-chart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h4 data-i18n="charts.relationship">İlişki Analizi</h4>
+                            <canvas id="relationship-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="panel-divider"></div>
+
+                    <div class="tabs-modern-container" role="tablist" aria-label="Kullanıcı listeleri">
+                        <div class="tabs-header">
+                            <div class="tabs-buttons">
+                                <button class="tab-btn active" data-tab="not-following" role="tab" aria-selected="true" aria-controls="content-not-following">
+                                    <span data-i18n="tabs.notFollowing">Takip Etmeyenler</span>
+                                    <span class="badge" id="tab-not-following-count">0</span>
+                                </button>
+                                <button class="tab-btn" data-tab="you-dont-follow" role="tab" aria-selected="false" aria-controls="content-you-dont-follow">
+                                    <span data-i18n="tabs.youDontFollow">Takip Etmediklerin</span>
+                                    <span class="badge" id="tab-you-dont-follow-count">0</span>
+                                </button>
+                                <button class="tab-btn" data-tab="mutual" role="tab" aria-selected="false" aria-controls="content-mutual">
+                                    <span data-i18n="tabs.mutual">Karşılıklı</span>
+                                    <span class="badge" id="tab-mutual-count">0</span>
+                                </button>
+                            </div>
+                            <div class="list-search-box">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                                <input type="text" id="search-input" placeholder="Kullanıcı ara..." data-i18n-placeholder="search.placeholder" aria-label="Kullanıcı ara">
+                            </div>
+                        </div>
+
+                        <div class="tab-body">
+                            <div class="tab-content active" id="content-not-following" role="tabpanel">
+                                <div class="user-list-premium" id="list-not-following"></div>
+                            </div>
+                            <div class="tab-content" id="content-you-dont-follow" role="tabpanel">
+                                <div class="user-list-premium" id="list-you-dont-follow"></div>
+                            </div>
+                            <div class="tab-content" id="content-mutual" role="tabpanel">
+                                <div class="user-list-premium" id="list-mutual"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="list-footer-actions">
+                        <button class="btn-action-premium" id="save-snapshot-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                <polyline points="17 21 17 13 7 13 7 21" />
+                                <polyline points="7 3 7 8 15 8" />
+                            </svg>
+                            <span data-i18n="actions.saveSnapshot">Kaydet</span>
+                        </button>
+                        <button class="btn-action-premium" id="export-csv-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            <span>CSV</span>
+                        </button>
+                        <button class="btn-action-premium" id="export-json-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            <span>JSON</span>
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <div class="code-container">
-                <div class="code-header">
-                    <span>🚀 Akıllı Script (Takipçi + Takip Edilen)</span>
-                    <button class="copy-btn" id="copy-code-btn">📋 Kopyala</button>
-                </div>
-                <pre class="code-block" id="console-code">// 🚀 X/Twitter Takipçi Toplama v4
-(async()=>{
-const url=location.href;
-const isFollowers=url.includes('/followers');
-const isFollowing=url.includes('/following')&&!isFollowers;
-
-if(!isFollowers && !isFollowing){
-    alert('Takipçi veya takip sayfasına git!');
-    return;
-}
-
-const type=isFollowers?'TAKİPÇİ':'TAKİP';
-console.log('🔄 '+type+' toplanıyor...');
-
-const users=new Set();
-let last=0,stable=0;
-
-const loop=setInterval(()=>{
-    document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a=>{
-        const u=a.pathname.slice(1);
-        if(u && !u.includes('/') && !['home','explore','notifications','messages','i','search'].includes(u)) 
-            users.add(u);
-    });
-    console.log('📊 '+users.size+' bulundu');
-    
-    if(users.size===last){
-        if(++stable>=4){
-            clearInterval(loop);
-            const list=[...users];
-            const key=isFollowers?'_xf':'_xg';
-            localStorage.setItem(key,list.join(','));
-            
-            console.log('\n✅ '+type+' TAMAMLANDI: '+list.length);
-            
-            // Diğer liste var mı?
-            const otherKey=isFollowers?'_xg':'_xf';
-            const other=localStorage.getItem(otherKey);
-            
-            if(other){
-                const otherList=other.split(',');
-                const f=isFollowers?list:otherList;
-                const g=isFollowing?list:otherList;
-                
-                console.log('\n🎉 HER İKİ LİSTE HAZIR!');
-                console.log('Takipçi:',f.length,'Takip:',g.length);
-                console.log('\n=== TAKİPÇİLER ===');
-                f.forEach(u=>console.log(u));
-                console.log('\n=== TAKİP EDİLENLER ===');
-                g.forEach(u=>console.log(u));
-                
-                localStorage.removeItem('_xf');
-                localStorage.removeItem('_xg');
-            } else {
-                console.log('\n📋 '+type+' LİSTESİ:');
-                list.forEach(u=>console.log(u));
-                console.log('\n👉 Diğer sayfaya git, scripti tekrar çalıştır!');
-            }
-        }
-    } else { stable=0; last=users.size; }
-    window.scrollBy(0,2000);
-},700);
-})();</pre>
-            </div>
-
-            <div class="step-card final-step">
-                <div class="step-number">4</div>
-                <div class="step-content">
-                    <h4>Diğer Sayfaya Git ve Tekrar Çalıştır</h4>
-                    <p>Script bitince <strong>manuel olarak</strong> diğer sayfaya git (takip edilenler/takipçiler) ve
-                        <strong>aynı kodu tekrar yapıştır</strong>. İkisi de hazır olunca sonuç gelir!
-                    </p>
-                </div>
-            </div>
-
-            <div class="step-card final-step">
-                <div class="step-number">5</div>
-                <div class="step-content">
-                    <h4>Sonuçları Buraya Yapıştır</h4>
-                    <p>Konsoldaki listeyi kopyala ve aşağıya yapıştır:</p>
-                </div>
-            </div>
-
-            <div class="paste-container">
-                <div class="paste-inputs">
-                    <div class="paste-box">
-                        <label>📥 Takipçiler</label>
-                        <textarea id="followers-input" placeholder="Takipçi listesi..."></textarea>
+                <!-- Snapshots Section -->
+                <div class="panel-section hidden" id="snapshots-section">
+                    <div class="section-header">
+                        <h2 data-i18n="snapshots.title">📸 Geçmiş Karşılaştırma</h2>
                     </div>
-                    <div class="paste-box">
-                        <label>📤 Takip Edilenler</label>
-                        <textarea id="following-input" placeholder="Takip edilen listesi..."></textarea>
+                    <div class="snapshot-controls">
+                        <select id="snapshot-select" aria-label="Snapshot seçin"></select>
+                        <button class="btn-action-premium btn-sm" id="compare-snapshot-btn">
+                            <span data-i18n="snapshots.compare">Karşılaştır</span>
+                        </button>
                     </div>
+                    <div class="changes-summary" id="changes-summary"></div>
+                    <div class="changes-list" id="changes-list"></div>
                 </div>
-                <button class="btn btn-primary btn-large" id="analyze-paste-btn">🔍 Analiz Et</button>
             </div>
-
-            <div class="method-note">
-                <p>💡 <strong>Nasıl çalışır?</strong> 1) Takipçiler sayfasına gider, toplar, kaydeder. 2) Takip
-                    edilenler sayfasına yönlendirir. 3) Orada tekrar çalıştırınca devam eder ve her iki listeyi verir.
-                </p>
-            </div>
-        </section>
+        </main>
 
         <!-- Footer -->
         <footer class="footer">
-            <p>🔒 Tüm verileriniz tarayıcınızda işlenir. Hiçbir veri sunucuya gönderilmez.</p>
-            <p class="copyright">© 2026 X Takipçi Analiz - Açık Kaynak</p>
+            <p data-i18n="footer.privacy">🔒 Tüm verileriniz tarayıcınızda işlenir. Hiçbir veri sunucuya gönderilmez.</p>
         </footer>
     </div>
 
-    <!-- Toast Container -->
-    <div class="toast-container" id="toast-container"></div>
+    <!-- Toast -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
     <script src="app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW registered:', reg.scope))
+                    .catch(err => console.log('SW registration failed:', err));
+            });
+        }
+    </script>
 </body>
 
 </html>

@@ -1,5 +1,5 @@
 /**
- * X/Twitter Takipçi Analiz Uygulaması
+ * X/Twitter Takipçi Analiz Uygulaması — Kampüs Edition v3
  * Tüm işlemler tarayıcıda gerçekleşir, veri sunucuya gönderilmez.
  */
 
@@ -12,414 +12,374 @@ let currentData = {
     mutual: []
 };
 
-// ===== DOM Elements =====
-const elements = {
-    uploadSection: document.getElementById('upload-section'),
-    loadingSection: document.getElementById('loading-section'),
-    resultsSection: document.getElementById('results-section'),
-    snapshotsSection: document.getElementById('snapshots-section'),
-    uploadArea: document.getElementById('upload-area'),
-    fileInput: document.getElementById('file-input'),
-    searchInput: document.getElementById('search-input'),
-    snapshotSelect: document.getElementById('snapshot-select'),
-    changesSummary: document.getElementById('changes-summary'),
-    changesList: document.getElementById('changes-list'),
-    bookmarkletLink: document.getElementById('bookmarklet-link'),
-    menuBtn: document.getElementById('menu-btn'),
-    mobileNav: document.getElementById('mobile-nav'),
-    toastContainer: document.getElementById('toast-container'),
-    progressBar: document.getElementById('progress-bar'),
-    progressText: document.getElementById('progress-text'),
-    loadingText: document.getElementById('loading-text')
+// Pagination state
+const ITEMS_PER_PAGE = 50;
+let displayCounts = {
+    'list-not-following': ITEMS_PER_PAGE,
+    'list-you-dont-follow': ITEMS_PER_PAGE,
+    'list-mutual': ITEMS_PER_PAGE
 };
+
+// ===== DOM Elements =====
+const elements = {};
+
+function cacheElements() {
+    elements.pasteSection = document.getElementById('paste-section');
+    elements.resultsSection = document.getElementById('results-content');
+    elements.resultsDivider = document.getElementById('results-divider');
+    elements.snapshotsSection = document.getElementById('snapshots-section');
+    elements.followersInput = document.getElementById('followers-input');
+    elements.followingInput = document.getElementById('following-input');
+    elements.analyzeBtn = document.getElementById('analyze-paste-btn');
+    elements.searchInput = document.getElementById('search-input');
+    elements.copyCodeBtn = document.getElementById('copy-code-btn');
+    elements.saveSnapshotBtn = document.getElementById('save-snapshot-btn');
+    elements.exportCsvBtn = document.getElementById('export-csv-btn');
+    elements.exportJsonBtn = document.getElementById('export-json-btn');
+    elements.compareSnapshotBtn = document.getElementById('compare-snapshot-btn');
+    elements.tabs = document.querySelectorAll('.tab-btn');
+    elements.tabContents = document.querySelectorAll('.tab-content');
+    elements.toastContainer = document.getElementById('toast-container');
+    elements.snapshotSelect = document.getElementById('snapshot-select');
+    elements.changesSummary = document.getElementById('changes-summary');
+    elements.changesList = document.getElementById('changes-list');
+}
 
 // ===== Initialization =====
 document.addEventListener('DOMContentLoaded', () => {
-    initializeUpload();
+    cacheElements();
+    initializeTheme();
+    initializeLanguage();
     initializeTabs();
     initializeSearch();
     initializeButtons();
-    initializeMobileMenu();
-    initializeConsoleSection();
+    initializePasteAutoCount();
     loadSnapshots();
-    registerServiceWorker();
 });
 
-// ===== Service Worker =====
-function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-                console.log('SW registered:', registration.scope);
-            })
-            .catch((error) => {
-                console.log('SW registration failed:', error);
-            });
+// ========== Clipboard Helper ==========
+function copyToClipboard(text) {
+    // Önce execCommand dene (HTTP dahil her yerde çalışır)
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '-9999px';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    
+    let success = false;
+    try {
+        success = document.execCommand('copy');
+    } catch (e) {
+        success = false;
+    }
+    document.body.removeChild(textarea);
+    
+    if (success) {
+        showToast(state.lang === 'tr' ? 'Kopyalandı!' : 'Copied!', 'success');
+        return;
+    }
+    
+    // Fallback: Clipboard API (sadece HTTPS'de çalışır)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(state.lang === 'tr' ? 'Kopyalandı!' : 'Copied!', 'success');
+        }).catch(() => {
+            showToast(state.lang === 'tr' ? 'Kopyalama başarısız. Kodu seçip Ctrl+C yapın.' : 'Copy failed. Select code and press Ctrl+C.', 'error');
+        });
+    } else {
+        showToast(state.lang === 'tr' ? 'Kopyalama başarısız. Kodu seçip Ctrl+C yapın.' : 'Copy failed. Select code and press Ctrl+C.', 'error');
     }
 }
 
 // ===== Toast Notifications =====
-function showToast(message, type = 'info', duration = 4000) {
+function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
 
-    const icons = {
-        success: '✅',
-        error: '❌',
-        info: 'ℹ️',
-        warning: '⚠️'
-    };
+    const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
 
     toast.innerHTML = `
-        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
         <span class="toast-message">${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+        <button class="toast-close" aria-label="Kapat">×</button>
     `;
 
-    elements.toastContainer.appendChild(toast);
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 300);
+    });
 
-    // Auto remove
+    elements.toastContainer.appendChild(toast);
     setTimeout(() => {
         if (toast.parentElement) {
-            toast.style.animation = 'toastSlide 0.3s ease reverse';
+            toast.classList.add('toast-out');
             setTimeout(() => toast.remove(), 300);
         }
-    }, duration);
-
-    return toast;
+    }, 4000);
 }
 
-// ===== Mobile Menu =====
-function initializeMobileMenu() {
-    if (!elements.menuBtn || !elements.mobileNav) return;
+// ===== Paste Counter =====
+function initializePasteAutoCount() {
+    const updateCount = (input, countEl) => {
+        if (!input || !countEl) return;
+        const list = parseList(input.value);
+        countEl.textContent = list.length;
+    };
 
-    elements.menuBtn.addEventListener('click', () => {
-        elements.mobileNav.classList.toggle('show');
-
-        // Update icon
-        const isOpen = elements.mobileNav.classList.contains('show');
-        elements.menuBtn.innerHTML = isOpen
-            ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                   <line x1="18" y1="6" x2="6" y2="18"/>
-                   <line x1="6" y1="6" x2="18" y2="18"/>
-               </svg>`
-            : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                   <line x1="3" y1="6" x2="21" y2="6"/>
-                   <line x1="3" y1="12" x2="21" y2="12"/>
-                   <line x1="3" y1="18" x2="21" y2="18"/>
-               </svg>`;
-    });
-
-    // Close menu when clicking a link
-    elements.mobileNav.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-            elements.mobileNav.classList.remove('show');
-            elements.menuBtn.innerHTML = `
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="3" y1="12" x2="21" y2="12"/>
-                    <line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-            `;
-        });
-    });
-
-    // Close menu when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!elements.mobileNav.contains(e.target) &&
-            !elements.menuBtn.contains(e.target) &&
-            elements.mobileNav.classList.contains('show')) {
-            elements.mobileNav.classList.remove('show');
-            elements.menuBtn.innerHTML = `
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="3" y1="12" x2="21" y2="12"/>
-                    <line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-            `;
-        }
-    });
-}
-
-// ===== File Upload =====
-function initializeUpload() {
-    const { uploadArea, fileInput } = elements;
-
-    // Drag & Drop
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('drag-over');
-    });
-
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('drag-over');
-    });
-
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (file && file.name.endsWith('.zip')) {
-            processZipFile(file);
-        } else {
-            showToast('Lütfen bir ZIP dosyası yükleyin.', 'error');
-        }
-    });
-
-    // File input change
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            processZipFile(file);
-        }
-    });
-
-    // Click to upload
-    uploadArea.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'BUTTON') {
-            fileInput.click();
-        }
-    });
-}
-
-// ===== Progress Bar =====
-function updateProgress(percent, text = null) {
-    if (elements.progressBar) {
-        elements.progressBar.style.width = percent + '%';
+    if (elements.followersInput) {
+        elements.followersInput.addEventListener('input', () =>
+            updateCount(elements.followersInput, document.getElementById('followers-count'))
+        );
     }
-    if (elements.progressText) {
-        elements.progressText.textContent = Math.round(percent) + '%';
-    }
-    if (text && elements.loadingText) {
-        elements.loadingText.textContent = text;
+    if (elements.followingInput) {
+        elements.followingInput.addEventListener('input', () =>
+            updateCount(elements.followingInput, document.getElementById('following-count'))
+        );
     }
 }
 
-// ===== ZIP Processing =====
-async function processZipFile(file) {
-    showLoading();
-    updateProgress(0, 'ZIP dosyası açılıyor...');
-    showToast('Dosya işleniyor...', 'info');
+// ===== Buttons =====
+function initializeButtons() {
+    // Analyze button
+    if (elements.analyzeBtn) {
+        elements.analyzeBtn.addEventListener('click', analyzePastedData);
+    }
 
-    try {
-        const zip = await JSZip.loadAsync(file);
-        updateProgress(20, 'Dosyalar taranıyor...');
-
-        // Find follower and following files
-        let followerData = null;
-        let followingData = null;
-        const files = Object.entries(zip.files);
-        const totalFiles = files.length;
-        let processed = 0;
-
-        for (const [filename, zipEntry] of files) {
-            processed++;
-            const progress = 20 + (processed / totalFiles * 60);
-
-            if (filename.includes('follower') && filename.endsWith('.js')) {
-                updateProgress(progress, 'Takipçiler okunuyor...');
-                const content = await zipEntry.async('string');
-                followerData = parseTwitterJS(content, 'follower');
+    // Copy code button
+    if (elements.copyCodeBtn) {
+        elements.copyCodeBtn.addEventListener('click', () => {
+            const codeEl = document.getElementById('console-code');
+            if (!codeEl) return;
+            const code = codeEl.innerText || codeEl.textContent || '';
+            
+            if (!code.trim()) {
+                showToast('Kod bulunamadı.', 'error');
+                return;
             }
-            if (filename.includes('following') && filename.endsWith('.js')) {
-                updateProgress(progress, 'Takip edilenler okunuyor...');
-                const content = await zipEntry.async('string');
-                followingData = parseTwitterJS(content, 'following');
-            }
-        }
-
-        updateProgress(90, 'Analiz yapılıyor...');
-
-        if (!followerData || !followingData) {
-            throw new Error('Takipçi veya takip edilen verileri bulunamadı. Doğru ZIP dosyasını yüklediğinizden emin olun.');
-        }
-
-        currentData.followers = followerData;
-        currentData.following = followingData;
-
-        updateProgress(100, 'Tamamlandı!');
-        analyzeData();
-        showResults();
-        showToast('Analiz tamamlandı! 🎉', 'success');
-
-    } catch (error) {
-        console.error('ZIP işleme hatası:', error);
-        showToast(error.message || 'Dosya işlenirken bir hata oluştu.', 'error');
-        hideLoading();
-    }
-}
-
-// ===== Parse Twitter JS Files =====
-function parseTwitterJS(content, type) {
-    try {
-        // Twitter JS format: window.YTD.follower.part0 = [...]
-        const jsonStart = content.indexOf('[');
-        const jsonEnd = content.lastIndexOf(']') + 1;
-        const jsonStr = content.substring(jsonStart, jsonEnd);
-        const data = JSON.parse(jsonStr);
-
-        // Extract account IDs
-        return data.map(item => {
-            const entry = item[type] || item;
-            return {
-                accountId: entry.accountId,
-                userLink: entry.userLink || `https://twitter.com/intent/user?user_id=${entry.accountId}`
-            };
+            
+            copyToClipboard(code);
         });
-    } catch (error) {
-        console.error(`Parse hatası (${type}):`, error);
-        return [];
+    }
+
+    // Save snapshot button
+    if (elements.saveSnapshotBtn) {
+        elements.saveSnapshotBtn.addEventListener('click', saveSnapshot);
+    }
+
+    // Export CSV button
+    if (elements.exportCsvBtn) {
+        elements.exportCsvBtn.addEventListener('click', () => exportData('csv'));
+    }
+
+    // Export JSON button
+    if (elements.exportJsonBtn) {
+        elements.exportJsonBtn.addEventListener('click', () => exportData('json'));
+    }
+
+    // Compare snapshot button
+    if (elements.compareSnapshotBtn) {
+        elements.compareSnapshotBtn.addEventListener('click', compareSnapshot);
     }
 }
 
-// ===== Data Analysis =====
-function analyzeData() {
-    const followerIds = new Set(currentData.followers.map(f => f.accountId));
-    const followingIds = new Set(currentData.following.map(f => f.accountId));
-
-    // Takip ettiğin ama seni takip etmeyenler
-    currentData.notFollowingBack = currentData.following.filter(
-        f => !followerIds.has(f.accountId)
-    );
-
-    // Seni takip eden ama takip etmediklerin
-    currentData.youDontFollow = currentData.followers.filter(
-        f => !followingIds.has(f.accountId)
-    );
-
-    // Karşılıklı takip
-    currentData.mutual = currentData.followers.filter(
-        f => followingIds.has(f.accountId)
-    );
+// ===== Parse Logic =====
+function parseList(text) {
+    if (!text || !text.trim()) return [];
+    return text.split(/[\n,\s]+/)
+        .map(u => u.trim().replace(/^@/, '').toLowerCase())
+        .filter(u => u && u.length > 0 && u.length <= 15 && /^[a-zA-Z0-9_]+$/.test(u));
 }
 
-// ===== UI Updates =====
-function showLoading() {
-    elements.uploadSection.classList.add('hidden');
-    elements.loadingSection.classList.remove('hidden');
-    elements.resultsSection.classList.add('hidden');
+function analyzePastedData() {
+    const followersRaw = elements.followersInput?.value;
+    const followingRaw = elements.followingInput?.value;
+
+    if (!followersRaw || !followingRaw) {
+        showToast('Lütfen her iki listeyi de yapıştırın.', 'warning');
+        return;
+    }
+
+    currentData.followers = parseList(followersRaw);
+    currentData.following = parseList(followingRaw);
+
+    if (currentData.followers.length === 0 || currentData.following.length === 0) {
+        showToast('Geçerli kullanıcı bulunamadı. Listeleri kontrol edin.', 'error');
+        return;
+    }
+
+    calculateResults();
+    showResults();
+    showToast(`Analiz tamamlandı! ${currentData.notFollowingBack.length} kişi seni takip etmiyor.`, 'success');
+
+    // Smooth scroll to results
+    elements.resultsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function hideLoading() {
-    elements.loadingSection.classList.add('hidden');
-    elements.uploadSection.classList.remove('hidden');
+// ===== Analysis Logic =====
+function calculateResults() {
+    const followers = new Set(currentData.followers);
+    const following = new Set(currentData.following);
+
+    currentData.notFollowingBack = currentData.following.filter(u => !followers.has(u));
+    currentData.youDontFollow = currentData.followers.filter(u => !following.has(u));
+    currentData.mutual = currentData.following.filter(u => followers.has(u));
 }
 
+// ===== UI Logic =====
 function showResults() {
-    elements.loadingSection.classList.add('hidden');
-    elements.uploadSection.classList.add('hidden');
-    elements.resultsSection.classList.remove('hidden');
+    if (elements.resultsSection) elements.resultsSection.classList.remove('hidden');
+    if (elements.resultsDivider) elements.resultsDivider.classList.remove('hidden');
+    if (elements.snapshotsSection) elements.snapshotsSection.classList.remove('hidden');
 
-    // Update stats with animation
+    // Reset pagination
+    displayCounts = {
+        'list-not-following': ITEMS_PER_PAGE,
+        'list-you-dont-follow': ITEMS_PER_PAGE,
+        'list-mutual': ITEMS_PER_PAGE
+    };
+
+    // Animate stats
     animateNumber('total-followers', currentData.followers.length);
     animateNumber('total-following', currentData.following.length);
     animateNumber('not-following-back', currentData.notFollowingBack.length);
     animateNumber('mutual-count', currentData.mutual.length);
 
     // Update tab counts
-    document.getElementById('tab-not-following-count').textContent = currentData.notFollowingBack.length;
-    document.getElementById('tab-you-dont-follow-count').textContent = currentData.youDontFollow.length;
-    document.getElementById('tab-mutual-count').textContent = currentData.mutual.length;
+    const tabCounts = {
+        'tab-not-following-count': currentData.notFollowingBack.length,
+        'tab-you-dont-follow-count': currentData.youDontFollow.length,
+        'tab-mutual-count': currentData.mutual.length
+    };
+    Object.entries(tabCounts).forEach(([id, count]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = count;
+    });
 
     // Render lists
     renderUserList('list-not-following', currentData.notFollowingBack);
     renderUserList('list-you-dont-follow', currentData.youDontFollow);
     renderUserList('list-mutual', currentData.mutual);
 
-    // Show snapshots if available
-    updateSnapshotsUI();
-
-    // Scroll to results
-    elements.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Update charts (with safety check)
+    updateCharts();
 }
 
-// Number animation for stats
-function animateNumber(elementId, target) {
-    const element = document.getElementById(elementId);
-    const duration = 1000;
-    const start = 0;
-    const startTime = performance.now();
+function animateNumber(id, target) {
+    const el = document.getElementById(id);
+    if (!el) return;
 
-    function update(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
-        const current = Math.round(start + (target - start) * easeProgress);
+    const duration = 800;
+    const start = performance.now();
 
-        element.textContent = current.toLocaleString('tr-TR');
-
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        }
+    function step(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        el.textContent = Math.floor(eased * target);
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = target;
     }
-
-    requestAnimationFrame(update);
+    requestAnimationFrame(step);
 }
 
 function renderUserList(containerId, users, searchQuery = '') {
     const container = document.getElementById(containerId);
+    if (!container) return;
 
-    const filteredUsers = searchQuery
-        ? users.filter(u => u.accountId.toLowerCase().includes(searchQuery.toLowerCase()))
+    // Get parent wrapper to manage show-more button
+    const wrapper = container.closest('.tab-content');
+
+    // Filter by search
+    const filtered = searchQuery
+        ? users.filter(u => u.toLowerCase().includes(searchQuery))
         : users;
 
-    if (filteredUsers.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M8 15h8M9 9h.01M15 9h.01"/>
-                </svg>
-                <p>${searchQuery ? 'Arama sonucu bulunamadı' : 'Bu listede kimse yok'}</p>
-            </div>
-        `;
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-list">Liste boş</div>';
+        // Remove existing show-more button
+        const existingBtn = wrapper?.querySelector('.show-more-btn');
+        if (existingBtn) existingBtn.remove();
         return;
     }
 
-    container.innerHTML = filteredUsers.map((user, index) => `
-        <div class="user-item" style="animation-delay: ${index * 0.03}s">
-            <div class="user-avatar">${getInitial(user.accountId)}</div>
+    // Pagination
+    const limit = displayCounts[containerId] || ITEMS_PER_PAGE;
+    const visible = filtered.slice(0, limit);
+    const hasMore = filtered.length > limit;
+
+    container.innerHTML = visible.map(u => `
+        <div class="user-item">
+            <div class="user-avatar">${u.charAt(0).toUpperCase()}</div>
             <div class="user-info">
-                <div class="user-id">@${user.accountId}</div>
-                <div class="user-link">ID: ${user.accountId}</div>
+                <div class="user-id">@${u}</div>
+                <div class="user-link">x.com/${u}</div>
             </div>
             <div class="user-actions">
-                <a href="${user.userLink}" target="_blank" rel="noopener">Profili Gör</a>
+                <a href="https://x.com/${u}" target="_blank" rel="noopener noreferrer">Profil</a>
             </div>
         </div>
     `).join('');
-}
 
-function getInitial(id) {
-    return id.charAt(0).toUpperCase();
+    // Manage show-more button
+    let showMoreBtn = wrapper?.querySelector('.show-more-btn');
+    if (hasMore) {
+        if (!showMoreBtn) {
+            showMoreBtn = document.createElement('button');
+            showMoreBtn.className = 'show-more-btn';
+            showMoreBtn.addEventListener('click', () => {
+                displayCounts[containerId] = (displayCounts[containerId] || ITEMS_PER_PAGE) + ITEMS_PER_PAGE;
+                renderUserList(containerId, users, searchQuery);
+            });
+            wrapper?.appendChild(showMoreBtn);
+        }
+        const remaining = filtered.length - limit;
+        showMoreBtn.textContent = `Daha fazla göster (${remaining} kişi kaldı)`;
+    } else if (showMoreBtn) {
+        showMoreBtn.remove();
+    }
 }
 
 // ===== Tabs =====
 function initializeTabs() {
-    const tabs = document.querySelectorAll('.tab');
-
-    tabs.forEach(tab => {
+    elements.tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            // Remove active from all
-            tabs.forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-            // Add active to clicked
+            // Update tab buttons
+            elements.tabs.forEach(t => {
+                t.classList.remove('active');
+                t.setAttribute('aria-selected', 'false');
+            });
             tab.classList.add('active');
-            const tabId = tab.dataset.tab;
-            document.getElementById(`content-${tabId}`).classList.add('active');
+            tab.setAttribute('aria-selected', 'true');
+
+            // Update tab content
+            elements.tabContents.forEach(c => c.classList.remove('active'));
+            const target = tab.dataset.tab;
+            const panel = document.getElementById(`content-${target}`);
+            if (panel) panel.classList.add('active');
         });
     });
 }
 
 // ===== Search =====
 function initializeSearch() {
-    let debounceTimer;
+    if (!elements.searchInput) return;
 
+    let debounceTimer;
     elements.searchInput.addEventListener('input', (e) => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
-            const query = e.target.value;
+            const query = e.target.value.toLowerCase().trim();
+
+            // Reset pagination on search
+            displayCounts = {
+                'list-not-following': ITEMS_PER_PAGE,
+                'list-you-dont-follow': ITEMS_PER_PAGE,
+                'list-mutual': ITEMS_PER_PAGE
+            };
+
             renderUserList('list-not-following', currentData.notFollowingBack, query);
             renderUserList('list-you-dont-follow', currentData.youDontFollow, query);
             renderUserList('list-mutual', currentData.mutual, query);
@@ -427,514 +387,365 @@ function initializeSearch() {
     });
 }
 
-// ===== Buttons =====
-function initializeButtons() {
-    document.getElementById('save-snapshot-btn').addEventListener('click', saveSnapshot);
-    document.getElementById('export-btn').addEventListener('click', exportData);
-}
-
-// ===== Snapshots =====
-function saveSnapshot() {
-    if (currentData.followers.length === 0) {
-        showToast('Önce veri yüklemeniz gerekiyor.', 'warning');
-        return;
-    }
-
-    const snapshots = JSON.parse(localStorage.getItem('xFollowerSnapshots') || '[]');
-
-    const newSnapshot = {
-        id: Date.now(),
-        date: new Date().toISOString(),
-        displayDate: new Date().toLocaleString('tr-TR'),
-        followers: currentData.followers.map(f => f.accountId),
-        following: currentData.following.map(f => f.accountId)
-    };
-
-    snapshots.unshift(newSnapshot);
-
-    // Keep only last 10 snapshots
-    if (snapshots.length > 10) {
-        snapshots.pop();
-    }
-
-    localStorage.setItem('xFollowerSnapshots', JSON.stringify(snapshots));
-
-    showToast('Snapshot kaydedildi! 💾', 'success');
-    updateSnapshotsUI();
-}
-
-function loadSnapshots() {
-    const snapshots = JSON.parse(localStorage.getItem('xFollowerSnapshots') || '[]');
-    return snapshots;
-}
-
-function updateSnapshotsUI() {
-    const snapshots = loadSnapshots();
-
-    if (snapshots.length === 0) {
-        elements.snapshotsSection.classList.add('hidden');
-        return;
-    }
-
-    elements.snapshotsSection.classList.remove('hidden');
-
-    // Populate select
-    elements.snapshotSelect.innerHTML = snapshots.map(s =>
-        `<option value="${s.id}">${s.displayDate}</option>`
-    ).join('');
-
-    // Add change handler (remove old listeners first)
-    const newSelect = elements.snapshotSelect.cloneNode(true);
-    elements.snapshotSelect.parentNode.replaceChild(newSelect, elements.snapshotSelect);
-    elements.snapshotSelect = newSelect;
-
-    elements.snapshotSelect.addEventListener('change', () => {
-        compareWithSnapshot(elements.snapshotSelect.value);
-    });
-
-    // Compare with most recent
-    if (currentData.followers.length > 0) {
-        compareWithSnapshot(snapshots[0].id);
-    }
-}
-
-function compareWithSnapshot(snapshotId) {
-    const snapshots = loadSnapshots();
-    const snapshot = snapshots.find(s => s.id == snapshotId);
-
-    if (!snapshot || currentData.followers.length === 0) return;
-
-    const currentFollowerIds = new Set(currentData.followers.map(f => f.accountId));
-    const snapshotFollowerIds = new Set(snapshot.followers);
-
-    // New followers (in current but not in snapshot)
-    const newFollowers = [...currentFollowerIds].filter(id => !snapshotFollowerIds.has(id));
-
-    // Lost followers (in snapshot but not in current)
-    const lostFollowers = [...snapshotFollowerIds].filter(id => !currentFollowerIds.has(id));
-
-    // Update summary
-    elements.changesSummary.innerHTML = `
-        <div class="change-stat new">
-            <span>✅ Yeni Takipçi:</span>
-            <strong>${newFollowers.length}</strong>
-        </div>
-        <div class="change-stat lost">
-            <span>❌ Çıkan Takipçi:</span>
-            <strong>${lostFollowers.length}</strong>
-        </div>
-    `;
-
-    // Update list
-    let changesHTML = '';
-
-    if (lostFollowers.length > 0) {
-        changesHTML += '<h4 style="color: var(--accent-red); margin-bottom: 8px;">Takipten Çıkanlar:</h4>';
-        changesHTML += lostFollowers.map(id => `
-            <div class="user-item" style="border-left: 3px solid var(--accent-red);">
-                <div class="user-avatar">${id.charAt(0).toUpperCase()}</div>
-                <div class="user-info">
-                    <div class="user-id">@${id}</div>
-                </div>
-                <div class="user-actions">
-                    <a href="https://twitter.com/intent/user?user_id=${id}" target="_blank">Profil</a>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    if (newFollowers.length > 0) {
-        changesHTML += '<h4 style="color: var(--accent-green); margin: 16px 0 8px;">Yeni Takipçiler:</h4>';
-        changesHTML += newFollowers.map(id => `
-            <div class="user-item" style="border-left: 3px solid var(--accent-green);">
-                <div class="user-avatar">${id.charAt(0).toUpperCase()}</div>
-                <div class="user-info">
-                    <div class="user-id">@${id}</div>
-                </div>
-                <div class="user-actions">
-                    <a href="https://twitter.com/intent/user?user_id=${id}" target="_blank">Profil</a>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    if (!changesHTML) {
-        changesHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 24px;">Bu snapshot ile arasında değişiklik yok.</p>';
-    }
-
-    elements.changesList.innerHTML = changesHTML;
-}
-
-// ===== Export =====
-function exportData() {
-    if (currentData.followers.length === 0) {
-        showToast('Önce veri yüklemeniz gerekiyor.', 'warning');
-        return;
-    }
-
-    const exportObj = {
-        exportDate: new Date().toISOString(),
-        stats: {
-            totalFollowers: currentData.followers.length,
-            totalFollowing: currentData.following.length,
-            notFollowingBack: currentData.notFollowingBack.length,
-            youDontFollow: currentData.youDontFollow.length,
-            mutual: currentData.mutual.length
-        },
-        notFollowingBack: currentData.notFollowingBack.map(u => u.accountId),
-        youDontFollow: currentData.youDontFollow.map(u => u.accountId),
-        mutual: currentData.mutual.map(u => u.accountId)
-    };
-
-    const dataStr = JSON.stringify(exportObj, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `x-follower-analysis-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-
-    URL.revokeObjectURL(url);
-    showToast('Veriler indirildi! 📥', 'success');
-}
-
-// ===== Console Section =====
-function initializeConsoleSection() {
-    const copyBtn = document.getElementById('copy-code-btn');
-    const codeBlock = document.getElementById('console-code');
-    const analyzeBtn = document.getElementById('analyze-paste-btn');
-    const methodTabs = document.querySelectorAll('.method-tab');
-    const codeTitle = document.getElementById('code-title');
-
-    // Followers code
-    const followersCode = `// X/Twitter Takipçi Toplama Scripti
-(async function() {
-    const users = new Set();
-    let lastCount = 0, stable = 0;
-    console.log('🔄 Takipçiler toplanıyor...');
-    
-    const scroll = setInterval(async () => {
-        document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a => {
-            const u = a.pathname.slice(1);
-            if (u && !u.includes('/')) users.add(u);
-        });
-        
-        console.log('📊 Bulunan:', users.size);
-        
-        if (users.size === lastCount) {
-            if (++stable >= 3) {
-                clearInterval(scroll);
-                console.log('✅ Tamamlandı! Toplam:', users.size);
-                prompt('Listeyi kopyalayın (Ctrl+C):', [...users].join('\\n'));
-            }
-        } else { stable = 0; lastCount = users.size; }
-        
-        window.scrollBy(0, 2000);
-    }, 800);
-})();`;
-
-    // Following code
-    const followingCode = `// X/Twitter Takip Ettiklerini Toplama Scripti
-(async function() {
-    const users = new Set();
-    let lastCount = 0, stable = 0;
-    console.log('🔄 Takip ettiklerin toplanıyor...');
-    
-    const scroll = setInterval(async () => {
-        document.querySelectorAll('[data-testid="UserCell"] a[href^="/"]').forEach(a => {
-            const u = a.pathname.slice(1);
-            if (u && !u.includes('/')) users.add(u);
-        });
-        
-        console.log('📊 Bulunan:', users.size);
-        
-        if (users.size === lastCount) {
-            if (++stable >= 3) {
-                clearInterval(scroll);
-                console.log('✅ Tamamlandı! Toplam:', users.size);
-                prompt('Listeyi kopyalayın (Ctrl+C):', [...users].join('\\n'));
-            }
-        } else { stable = 0; lastCount = users.size; }
-        
-        window.scrollBy(0, 2000);
-    }, 800);
-})();`;
-
-    // Copy button
-    if (copyBtn && codeBlock) {
-        copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(codeBlock.textContent).then(() => {
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = '✅ Kopyalandı!';
-                showToast('Kod panoya kopyalandı!', 'success');
-                setTimeout(() => copyBtn.textContent = originalText, 2000);
-            }).catch(() => {
-                // Fallback for older browsers
-                const textarea = document.createElement('textarea');
-                textarea.value = codeBlock.textContent;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                copyBtn.textContent = '✅ Kopyalandı!';
-                setTimeout(() => copyBtn.textContent = '📋 Kopyala', 2000);
-            });
-        });
-    }
-
-    // Method tabs
-    methodTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            methodTabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-
-            const method = tab.dataset.method;
-            if (method === 'followers') {
-                codeBlock.textContent = followersCode;
-                codeTitle.textContent = '📥 Takipçileri Toplama Kodu';
-            } else {
-                codeBlock.textContent = followingCode;
-                codeTitle.textContent = '📤 Takip Ettiklerini Toplama Kodu';
-            }
-        });
-    });
-
-    // Analyze pasted data
-    if (analyzeBtn) {
-        analyzeBtn.addEventListener('click', analyzePastedData);
-    }
-}
-
-function analyzePastedData() {
-    const followersInput = document.getElementById('followers-input');
-    const followingInput = document.getElementById('following-input');
-
-    const followersText = followersInput?.value.trim() || '';
-    const followingText = followingInput?.value.trim() || '';
-
-    if (!followersText && !followingText) {
-        showToast('Lütfen en az bir listeye veri yapıştırın.', 'warning');
-        return;
-    }
-
-    // Parse usernames (one per line, or comma separated, or JSON array)
-    const parseList = (text) => {
-        if (!text) return [];
-
-        // Try JSON first
-        try {
-            const parsed = JSON.parse(text);
-            if (Array.isArray(parsed)) return parsed.filter(u => typeof u === 'string');
-        } catch (e) { }
-
-        // Try line-by-line or comma separated
-        return text
-            .split(/[\n,]/)
-            .map(u => u.trim().replace(/^@/, '').replace(/["'\[\]]/g, ''))
-            .filter(u => u && u.length > 0 && !u.includes(' '));
-    };
-
-    const followers = parseList(followersText);
-    const following = parseList(followingText);
-
-    if (followers.length === 0 && following.length === 0) {
-        showToast('Geçerli kullanıcı adı bulunamadı.', 'error');
-        return;
-    }
-
-    // Update current data
-    currentData.followers = followers.map(u => ({
-        accountId: u,
-        userLink: `https://twitter.com/${u}`
-    }));
-
-    currentData.following = following.map(u => ({
-        accountId: u,
-        userLink: `https://twitter.com/${u}`
-    }));
-
-    analyzeData();
-    showResults();
-    showToast(`Analiz tamamlandı! ${followers.length} takipçi, ${following.length} takip edilen`, 'success');
-}
-
-// ===== Theme Toggle =====
-function initializeTheme() {
-    const themeToggle = document.getElementById('theme-toggle');
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme);
-
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            const current = document.documentElement.getAttribute('data-theme') || 'dark';
-            const newTheme = current === 'dark' ? 'light' : 'dark';
-
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
-            showToast(newTheme === 'light' ? '☀️ Aydınlık tema' : '🌙 Karanlık tema', 'info');
-        });
-    }
-}
-
-function updateThemeIcon(theme) {
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-        themeToggle.textContent = theme === 'dark' ? '🌙' : '☀️';
-    }
-}
-
-// ===== Language Toggle =====
-const translations = {
-    tr: {
-        'nav.howTo': 'Nasıl Kullanılır?',
-        'nav.quickMethod': 'Hızlı Yöntem',
-        'hero.title': 'X/Twitter Takipçi Analizi',
-        'hero.subtitle': 'Seni takip etmeyenleri bul, GT sonrası çıkanları takip et'
-    },
-    en: {
-        'nav.howTo': 'How to Use',
-        'nav.quickMethod': 'Quick Method',
-        'hero.title': 'X/Twitter Follower Analysis',
-        'hero.subtitle': 'Find unfollowers, track who left after F4F'
-    }
-};
-
-let currentLang = localStorage.getItem('lang') || 'tr';
-
-function initializeLanguage() {
-    const langToggle = document.getElementById('lang-toggle');
-    updateLanguageUI();
-
-    if (langToggle) {
-        langToggle.addEventListener('click', () => {
-            currentLang = currentLang === 'tr' ? 'en' : 'tr';
-            localStorage.setItem('lang', currentLang);
-            updateLanguageUI();
-            showToast(currentLang === 'tr' ? '🇹🇷 Türkçe' : '🇬🇧 English', 'info');
-        });
-    }
-}
-
-function updateLanguageUI() {
-    const langToggle = document.getElementById('lang-toggle');
-    if (langToggle) {
-        langToggle.textContent = currentLang.toUpperCase();
-    }
-
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (translations[currentLang] && translations[currentLang][key]) {
-            el.textContent = translations[currentLang][key];
-        }
-    });
-}
-
 // ===== Charts =====
-let ratioChart = null;
-let relationshipChart = null;
+let charts = { ratio: null, relationship: null };
 
-function renderCharts() {
-    if (typeof Chart === 'undefined') return;
+function updateCharts() {
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not loaded yet');
+        return;
+    }
 
-    const ratioCtx = document.getElementById('ratio-chart');
-    const relationshipCtx = document.getElementById('relationship-chart');
+    const ctx1 = document.getElementById('ratio-chart');
+    const ctx2 = document.getElementById('relationship-chart');
+    if (!ctx1 || !ctx2) return;
 
-    if (!ratioCtx || !relationshipCtx) return;
+    if (charts.ratio) charts.ratio.destroy();
+    if (charts.relationship) charts.relationship.destroy();
 
-    // Destroy existing charts
-    if (ratioChart) ratioChart.destroy();
-    if (relationshipChart) relationshipChart.destroy();
+    const isDark = document.body.getAttribute('data-theme') !== 'light';
+    const textColor = isDark ? '#9d9db8' : '#64648a';
+    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
 
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
-                    padding: 12,
-                    font: { size: 12 }
+    charts.ratio = new Chart(ctx1.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Takipçi', 'Takip'],
+            datasets: [{
+                data: [currentData.followers.length, currentData.following.length],
+                backgroundColor: ['#a855f7', '#3b82f6'],
+                borderWidth: 0,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: textColor, padding: 16, font: { weight: '600', size: 12 } }
                 }
             }
         }
-    };
-
-    // Ratio Chart (Followers vs Following)
-    ratioChart = new Chart(ratioCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Takipçi', 'Takip Edilen'],
-            datasets: [{
-                data: [currentData.followers.length, currentData.following.length],
-                backgroundColor: ['#1d9bf0', '#a855f7'],
-                borderColor: ['#1d9bf0', '#a855f7'],
-                borderWidth: 0
-            }]
-        },
-        options: chartOptions
     });
 
-    // Relationship Chart
-    relationshipChart = new Chart(relationshipCtx, {
+    charts.relationship = new Chart(ctx2.getContext('2d'), {
         type: 'doughnut',
         data: {
-            labels: ['Karşılıklı', 'Takip Etmeyen', 'Takip Etmediğin'],
+            labels: ['Takip Etmeyen', 'Takip Etmediklerin', 'Karşılıklı'],
             datasets: [{
                 data: [
-                    currentData.mutual.length,
                     currentData.notFollowingBack.length,
-                    currentData.youDontFollow.length
+                    currentData.youDontFollow.length,
+                    currentData.mutual.length
                 ],
-                backgroundColor: ['#00ba7c', '#f4212e', '#ff7a00'],
-                borderWidth: 0
+                backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                borderWidth: 0,
+                borderRadius: 4
             }]
         },
-        options: chartOptions
+        options: {
+            responsive: true,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: textColor, padding: 16, font: { weight: '600', size: 12 } }
+                }
+            }
+        }
     });
 }
 
-// ===== CSV Export =====
-function exportToCSV() {
-    const headers = ['Type', 'Username', 'Profile URL'];
-    const rows = [];
+// ===== Theme =====
+function initializeTheme() {
+    const themeBtn = document.getElementById('theme-toggle');
+    if (!themeBtn) return;
 
-    currentData.notFollowingBack.forEach(u => {
-        rows.push(['Not Following Back', u.accountId, u.userLink]);
+    const sunIcon = themeBtn.querySelector('.theme-sun');
+    const moonIcon = themeBtn.querySelector('.theme-moon');
+
+    const setThemeUI = (theme) => {
+        document.body.setAttribute('data-theme', theme);
+        // In dark mode: show sun icon (to switch to light)
+        // In light mode: show moon icon (to switch to dark)
+        if (theme === 'dark') {
+            sunIcon?.classList.remove('hidden');
+            moonIcon?.classList.add('hidden');
+        } else {
+            sunIcon?.classList.add('hidden');
+            moonIcon?.classList.remove('hidden');
+        }
+        // Re-render charts with updated colors
+        if (currentData.followers.length > 0) {
+            updateCharts();
+        }
+    };
+
+    const saved = localStorage.getItem('theme') || 'dark';
+    setThemeUI(saved);
+
+    themeBtn.addEventListener('click', () => {
+        const current = document.body.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('theme', next);
+        setThemeUI(next);
+    });
+}
+
+// ===== Language =====
+function initializeLanguage() {
+    const langBtn = document.getElementById('lang-toggle');
+    if (!langBtn) return;
+
+    let lang = localStorage.getItem('lang') || 'tr';
+
+    const updateUI = () => {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[lang]?.[key]) el.textContent = translations[lang][key];
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (translations[lang]?.[key]) el.placeholder = translations[lang][key];
+        });
+        langBtn.textContent = lang.toUpperCase();
+    };
+
+    langBtn.addEventListener('click', () => {
+        lang = lang === 'tr' ? 'en' : 'tr';
+        localStorage.setItem('lang', lang);
+        updateUI();
     });
 
-    currentData.youDontFollow.forEach(u => {
-        rows.push(['You Dont Follow', u.accountId, u.userLink]);
-    });
+    updateUI();
+}
 
-    currentData.mutual.forEach(u => {
-        rows.push(['Mutual', u.accountId, u.userLink]);
-    });
+// ===== Export =====
+function exportData(format) {
+    if (currentData.followers.length === 0) {
+        showToast('Dışa aktarılacak veri yok. Önce analiz yapın.', 'warning');
+        return;
+    }
 
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const timestamp = new Date().toISOString().split('T')[0];
+    let content, mimeType, filename;
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    if (format === 'csv') {
+        const maxLen = Math.max(
+            currentData.notFollowingBack.length,
+            currentData.youDontFollow.length,
+            currentData.mutual.length
+        );
+
+        const rows = [['Takip Etmeyenler', 'Takip Etmediklerin', 'Karşılıklı']];
+        for (let i = 0; i < maxLen; i++) {
+            rows.push([
+                currentData.notFollowingBack[i] || '',
+                currentData.youDontFollow[i] || '',
+                currentData.mutual[i] || ''
+            ]);
+        }
+
+        content = rows.map(r => r.join(',')).join('\n');
+        mimeType = 'text/csv;charset=utf-8;';
+        filename = `x-analiz-${timestamp}.csv`;
+    } else {
+        content = JSON.stringify({
+            exportDate: new Date().toISOString(),
+            stats: {
+                totalFollowers: currentData.followers.length,
+                totalFollowing: currentData.following.length,
+                notFollowingBack: currentData.notFollowingBack.length,
+                youDontFollow: currentData.youDontFollow.length,
+                mutual: currentData.mutual.length
+            },
+            notFollowingBack: currentData.notFollowingBack,
+            youDontFollow: currentData.youDontFollow,
+            mutual: currentData.mutual
+        }, null, 2);
+        mimeType = 'application/json;charset=utf-8;';
+        filename = `x-analiz-${timestamp}.json`;
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `twitter_analysis_${new Date().toISOString().split('T')[0]}.csv`;
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
-    showToast('CSV dosyası indirildi! 📊', 'success');
+    showToast(`${format.toUpperCase()} dosyası indirildi!`, 'success');
 }
 
-// Initialize theme and language on load
-document.addEventListener('DOMContentLoaded', () => {
-    initializeTheme();
-    initializeLanguage();
-});
+// ===== Snapshots =====
+function loadSnapshots() {
+    const snaps = JSON.parse(localStorage.getItem('xSnaps') || '[]');
+    const select = elements.snapshotSelect;
+    if (!select) return;
 
-// Update showResults to also render charts
-const originalShowResults = showResults;
-showResults = function () {
-    originalShowResults();
-    setTimeout(renderCharts, 100);
+    select.innerHTML = '<option value="">' +
+        (localStorage.getItem('lang') === 'en' ? 'Select a snapshot...' : 'Snapshot seçin...') +
+        '</option>' +
+        snaps.map(s => `<option value="${s.id}">${s.date} (${s.followers?.length || 0} takipçi)</option>`).join('');
+}
+
+function saveSnapshot() {
+    if (currentData.followers.length === 0) {
+        showToast('Kaydedilecek veri yok. Önce analiz yapın.', 'warning');
+        return;
+    }
+
+    const snaps = JSON.parse(localStorage.getItem('xSnaps') || '[]');
+    const newSnap = {
+        id: Date.now(),
+        date: new Date().toLocaleString('tr-TR'),
+        followers: [...currentData.followers],
+        following: [...currentData.following]
+    };
+    snaps.unshift(newSnap);
+    localStorage.setItem('xSnaps', JSON.stringify(snaps.slice(0, 10)));
+    loadSnapshots();
+    showToast('Snapshot kaydedildi!', 'success');
+}
+
+function compareSnapshot() {
+    const select = elements.snapshotSelect;
+    if (!select || !select.value) {
+        showToast('Lütfen karşılaştırılacak bir snapshot seçin.', 'warning');
+        return;
+    }
+
+    if (currentData.followers.length === 0) {
+        showToast('Önce analiz yapın, sonra karşılaştırın.', 'warning');
+        return;
+    }
+
+    const snaps = JSON.parse(localStorage.getItem('xSnaps') || '[]');
+    const selectedSnap = snaps.find(s => String(s.id) === select.value);
+    if (!selectedSnap) {
+        showToast('Snapshot bulunamadı.', 'error');
+        return;
+    }
+
+    const oldFollowers = new Set(selectedSnap.followers || []);
+    const newFollowers = new Set(currentData.followers);
+
+    const gained = currentData.followers.filter(u => !oldFollowers.has(u));
+    const lost = (selectedSnap.followers || []).filter(u => !newFollowers.has(u));
+
+    const summary = elements.changesSummary;
+    const list = elements.changesList;
+    if (!summary || !list) return;
+
+    summary.innerHTML = `
+        <strong>📈 Yeni takipçi: +${gained.length}</strong> &nbsp; | &nbsp;
+        <strong>📉 Takipten çıkan: -${lost.length}</strong>
+    `;
+
+    const items = [
+        ...gained.map(u => `<div class="change-item gained">
+            <span class="change-badge gained">+YENİ</span>
+            <span>@${u}</span>
+        </div>`),
+        ...lost.map(u => `<div class="change-item lost">
+            <span class="change-badge lost">-ÇIKAN</span>
+            <span>@${u}</span>
+        </div>`)
+    ];
+
+    list.innerHTML = items.length > 0 ? items.join('') :
+        '<div class="empty-list" style="padding:24px">Değişiklik bulunamadı.</div>';
+
+    showToast('Karşılaştırma tamamlandı!', 'success');
+}
+
+// ===== Translations =====
+const translations = {
+    tr: {
+        'nav.script': 'Analiz',
+        'nav.results': 'Sonuçlar',
+        'nav.goToX': 'X\'e Git',
+        'hero.line1': 'Takipçi Analizinde',
+        'hero.line2': 'Zirveye Ulaşın.',
+        'hero.subtitle': 'Twitter profilinizi derinlemesine analiz edin. Sizi takip etmeyenleri anında tespit edin.',
+        'hero.cta': 'Hemen Başla',
+        'paste.title': '📋 Verileri Yapıştır',
+        'paste.subtitle': 'Hesap listelerini buraya ekleyin',
+        'paste.followers': 'Takipçiler',
+        'paste.following': 'Takip Edilenler',
+        'paste.followersPlaceholder': 'Takipçi listesini buraya yapıştır...',
+        'paste.followingPlaceholder': 'Takip edilen listesini buraya yapıştır...',
+        'paste.analyze': 'Analizi Başlat',
+        'script.toggle': '⚡ Verileri Nasıl Alırım?',
+        'script.subtitle': 'Twitter profilinizden verileri otomatik toplamak için aşağıdaki kodu kullanın',
+        'step1.title': 'Twitter\'a Git',
+        'step1.desc': 'Takipçi listeni aç',
+        'step2.title': 'Konsolu Aç',
+        'step2.desc': 'tuşuna bas',
+        'step3.title': 'Scripti Çalıştır',
+        'step3.desc': 'Aşağıdaki kodu yapıştır',
+        'code.copy': 'Kopyala',
+        'results.title': '📊 Analiz Özeti',
+        'stats.followers': 'Takipçi',
+        'stats.following': 'Takip Edilen',
+        'stats.notFollowing': 'Takip Etmeyen',
+        'stats.mutual': 'Karşılıklı',
+        'charts.ratio': 'Takipçi / Takip Oranı',
+        'charts.relationship': 'İlişki Analizi',
+        'tabs.notFollowing': 'Takip Etmeyenler',
+        'tabs.youDontFollow': 'Takip Etmediklerin',
+        'tabs.mutual': 'Karşılıklı',
+        'search.placeholder': 'Kullanıcı ara...',
+        'actions.saveSnapshot': 'Kaydet',
+        'actions.export': 'Dışa Aktar',
+        'snapshots.title': '📸 Geçmiş Karşılaştırma',
+        'snapshots.compare': 'Karşılaştır',
+        'footer.privacy': '🔒 Tüm verileriniz tarayıcınızda işlenir. Hiçbir veri sunucuya gönderilmez.'
+    },
+    en: {
+        'nav.script': 'Analyze',
+        'nav.results': 'Results',
+        'nav.goToX': 'Go to X',
+        'hero.line1': 'Master Your',
+        'hero.line2': 'Follower Analysis.',
+        'hero.subtitle': 'Deeply analyze your Twitter profile. Instantly detect who doesn\'t follow you back.',
+        'hero.cta': 'Get Started',
+        'paste.title': '📋 Paste Data',
+        'paste.subtitle': 'Paste your account lists here',
+        'paste.followers': 'Followers',
+        'paste.following': 'Following',
+        'paste.followersPlaceholder': 'Paste follower list here...',
+        'paste.followingPlaceholder': 'Paste following list here...',
+        'paste.analyze': 'Start Analysis',
+        'script.toggle': '⚡ How to Get the List?',
+        'script.subtitle': 'Use the code below to automatically collect data from your Twitter profile',
+        'step1.title': 'Go to Twitter',
+        'step1.desc': 'Open follower list',
+        'step2.title': 'Open Console',
+        'step2.desc': 'Press the key',
+        'step3.title': 'Run Script',
+        'step3.desc': 'Paste the code below',
+        'code.copy': 'Copy',
+        'results.title': '📊 Analysis Summary',
+        'stats.followers': 'Followers',
+        'stats.following': 'Following',
+        'stats.notFollowing': 'Not Following Back',
+        'stats.mutual': 'Mutual',
+        'charts.ratio': 'Follower / Following Ratio',
+        'charts.relationship': 'Relationship Analysis',
+        'tabs.notFollowing': 'Not Following Back',
+        'tabs.youDontFollow': 'You Don\'t Follow',
+        'tabs.mutual': 'Mutual',
+        'search.placeholder': 'Search users...',
+        'actions.saveSnapshot': 'Save',
+        'actions.export': 'Export',
+        'snapshots.title': '📸 History Comparison',
+        'snapshots.compare': 'Compare',
+        'footer.privacy': '🔒 All data is processed in your browser. No data is sent to any server.'
+    }
 };
